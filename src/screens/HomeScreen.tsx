@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Dimensions } from 'react-native';
-import { Text, Card, useTheme, Button, List, IconButton, Divider } from 'react-native-paper';
+import { Text, Card, useTheme, Button, List, IconButton, Divider, FAB, SegmentedButtons } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,6 +10,8 @@ import { PieChart } from 'react-native-gifted-charts';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { Account, PaymentMethod } from '../models/types';
 import { COLORS } from '../theme/theme';
+import QuickTransactionModal from '../components/QuickTransactionModal';
+import MoneyText from '../components/MoneyText';
 
 type MonthlyStatsData = {
   categoryId: string;
@@ -98,6 +100,9 @@ export const HomeScreen = () => {
   });
   const [refreshing, setRefreshing] = useState(false);
   const [activeGraph, setActiveGraph] = useState<'category' | 'paymentMethod'>('category');
+  
+  // 取引入力モーダル状態
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
 
   const loadData = async () => {
     // 口座残高を更新
@@ -198,15 +203,21 @@ export const HomeScreen = () => {
                 <Text variant="titleMedium">総資産</Text>
               </View>
             </View>
-            <Text variant="headlineMedium" style={styles.totalBalanceText}>
-              ¥{balances.totalBalance.toLocaleString()}
-            </Text>
+            <MoneyText 
+              amount={balances.totalBalance} 
+              size="large"
+              isIncome={true} 
+              style={styles.totalBalanceText}
+            />
             <View style={styles.assetDetailsContainer}>
               <View style={styles.operatingAssetsContainer}>
                 <Text variant="bodyMedium" style={styles.operatingAssetsLabel}>運用中資産</Text>
-                <Text variant="titleLarge" style={styles.operatingAssetsText}>
-                  ¥{balances.accountBalances.investment.toLocaleString()}
-                </Text>
+                <MoneyText 
+                  amount={balances.accountBalances.investment} 
+                  size="medium"
+                  isIncome={true} 
+                  style={styles.operatingAssetsText}
+                />
               </View>
             </View>
           </Card.Content>
@@ -248,17 +259,19 @@ export const HomeScreen = () => {
                 {accounts.map(account => (
                   <View key={account.id} style={styles.accountItem}>
                     <View style={styles.accountInfo}>
-                      <Text variant="bodyMedium">{account.name}</Text>
+                      <IconButton
+                        icon={getAccountIcon(account.type)}
+                        size={20}
+                        iconColor={getAccountColor(account.type)}
+                        style={styles.accountIcon}
+                      />
+                      <Text style={styles.accountName}>{account.name}</Text>
                     </View>
-                    <Text
-                      variant="bodyLarge"
-                      style={{
-                        color: account.balance >= 0 ? theme.colors.primary : theme.colors.error,
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      ¥{account.balance.toLocaleString()}
-                    </Text>
+                    <MoneyText
+                      amount={account.balance}
+                      isIncome={true}
+                      size="small"
+                    />
                   </View>
                 ))}
               </View>
@@ -278,79 +291,111 @@ export const HomeScreen = () => {
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
                 <IconButton
-                  icon="chart-pie"
+                  icon="chart-line"
                   size={24}
                   iconColor={theme.colors.primary}
                   style={styles.sectionIcon}
                 />
-                <Text variant="titleMedium">
-                  {monthlyStats.year}年{monthlyStats.month}月の統計
-                </Text>
+                <Text variant="titleMedium">{getJapaneseMonth(new Date(monthlyStats.year, monthlyStats.month - 1))}の収支</Text>
               </View>
             </View>
-            
-            <View style={styles.statsSelector}>
-              <Button
-                mode={activeGraph === 'category' ? 'contained' : 'outlined'}
-                compact
-                onPress={() => setActiveGraph('category')}
-                style={styles.graphButton}
-              >
-                カテゴリ
-              </Button>
-              <Button
-                mode={activeGraph === 'paymentMethod' ? 'contained' : 'outlined'}
-                compact
-                onPress={() => setActiveGraph('paymentMethod')}
-                style={styles.graphButton}
-              >
-                支払い方法
-              </Button>
-            </View>
-            
-            <View style={styles.statsOverview}>
-              <View style={styles.statsItem}>
-                <Text variant="labelLarge" style={styles.statsLabel}>収入</Text>
-                <Text variant="titleLarge" style={[styles.statsAmount, styles.incomeAmount]}>
-                  ¥{monthlyStats.totalIncome.toLocaleString()}
-                </Text>
-              </View>
-              <View style={styles.statsItem}>
-                <Text variant="labelLarge" style={styles.statsLabel}>支出</Text>
-                <Text variant="titleLarge" style={[styles.statsAmount, styles.expenseAmount]}>
-                  ¥{monthlyStats.totalExpenses.toLocaleString()}
-                </Text>
-              </View>
-            </View>
+
+            {/* カテゴリと支払い方法の切り替えボタン */}
+            <SegmentedButtons
+              value={activeGraph}
+              onValueChange={(value) => setActiveGraph(value as 'category' | 'paymentMethod')}
+              buttons={[
+                { value: 'category', label: 'カテゴリ' },
+                { value: 'paymentMethod', label: '支払い方法' },
+              ]}
+              style={styles.segmentedButtons}
+            />
             
             {/* 円グラフの表示 */}
             {activeGraph === 'category' ? (
               <>
                 <Text variant="titleSmall" style={styles.chartTitle}>支出カテゴリ</Text>
                 {monthlyStats.expenseData.length > 0 ? (
-                  <View style={styles.chartContainer}>
-                    <PieChart
-                      data={monthlyStats.expenseData.map(item => ({
-                        value: parseFloat(item.percentage.toFixed(1)),
-                        color: item.color,
-                        name: item.name,
-                      }))}
-                      radius={chartWidth / 4}
-                      textColor="black"
-                      textSize={12}
-                      showText
-                      showValuesAsLabels
-                      textBackgroundRadius={18}
-                      focusOnPress
-                      centerLabelComponent={() => (
-                        <View style={styles.centerLabel}>
-                          <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
-                            ¥{monthlyStats.totalExpenses.toLocaleString()}
-                          </Text>
-                        </View>
-                      )}
-                    />
-                  </View>
+                  <>
+                    <View style={styles.chartContainer}>
+                      <PieChart
+                        data={monthlyStats.expenseData.map(item => ({
+                          value: parseFloat(item.percentage.toFixed(1)),
+                          color: item.color,
+                          name: item.name,
+                        }))}
+                        radius={chartWidth / 4}
+                        textColor="black"
+                        textSize={12}
+                        showText
+                        showValuesAsLabels
+                        textBackgroundRadius={18}
+                        focusOnPress
+                        centerLabelComponent={() => (
+                          <View style={styles.centerLabel}>
+                            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
+                              ¥{monthlyStats.totalExpenses.toLocaleString()}
+                            </Text>
+                          </View>
+                        )}
+                      />
+                    </View>
+                    
+                    {/* 収支情報（グラフの下に移動） */}
+                    <View style={styles.statsOverview}>
+                      <View style={styles.statsItem}>
+                        <Text style={styles.statsLabel}>収入</Text>
+                        <MoneyText
+                          amount={monthlyStats.totalIncome}
+                          isIncome={true}
+                          size="small"
+                          style={styles.incomeAmount}
+                        />
+                      </View>
+                      <View style={styles.statsItem}>
+                        <Text style={styles.statsLabel}>支出</Text>
+                        <MoneyText
+                          amount={monthlyStats.totalExpenses}
+                          isIncome={false}
+                          size="small"
+                          style={styles.expenseAmount}
+                        />
+                      </View>
+                      <View style={styles.statsItem}>
+                        <Text style={styles.statsLabel}>残高</Text>
+                        <MoneyText
+                          amount={monthlyStats.balance}
+                          isIncome={monthlyStats.balance >= 0}
+                          size="small"
+                        />
+                      </View>
+                    </View>
+                    
+                    {/* カテゴリ別の金額リスト */}
+                    <View style={styles.categoryListContainer}>
+                      {monthlyStats.expenseData
+                        .sort((a, b) => b.amount - a.amount) // 金額の多い順にソート
+                        .map((category, index) => (
+                          <View key={index} style={styles.categoryListItem}>
+                            <View style={styles.categoryListItemLeft}>
+                              <View style={[styles.categoryColorDot, { backgroundColor: category.color }]} />
+                              <Text style={styles.categoryName} numberOfLines={1} ellipsizeMode="tail">
+                                {category.name}
+                              </Text>
+                            </View>
+                            <MoneyText
+                              amount={category.amount}
+                              isIncome={false}
+                              size="small"
+                              style={styles.categoryAmount}
+                            />
+                            <Text style={styles.categoryPercentage}>
+                              {category.percentage.toFixed(1)}%
+                            </Text>
+                          </View>
+                        ))}
+                    </View>
+                  </>
                 ) : (
                   <Text style={styles.emptyText}>データがありません</Text>
                 )}
@@ -359,29 +404,86 @@ export const HomeScreen = () => {
               <>
                 <Text variant="titleSmall" style={styles.chartTitle}>支払い方法</Text>
                 {paymentMethodStats.paymentMethodData.length > 0 ? (
-                  <View style={styles.chartContainer}>
-                    <PieChart
-                      data={paymentMethodStats.paymentMethodData.map(item => ({
-                        value: parseFloat(item.percentage.toFixed(1)),
-                        color: item.color,
-                        name: item.name,
-                      }))}
-                      radius={chartWidth / 4}
-                      textColor="black"
-                      textSize={12}
-                      showText
-                      showValuesAsLabels
-                      textBackgroundRadius={18}
-                      focusOnPress
-                      centerLabelComponent={() => (
-                        <View style={styles.centerLabel}>
-                          <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
-                            ¥{paymentMethodStats.totalExpenses.toLocaleString()}
-                          </Text>
-                        </View>
-                      )}
-                    />
-                  </View>
+                  <>
+                    <View style={styles.chartContainer}>
+                      <PieChart
+                        data={paymentMethodStats.paymentMethodData.map(item => ({
+                          value: parseFloat(item.percentage.toFixed(1)),
+                          color: item.color,
+                          name: item.name,
+                        }))}
+                        radius={chartWidth / 4}
+                        textColor="black"
+                        textSize={12}
+                        showText
+                        showValuesAsLabels
+                        textBackgroundRadius={18}
+                        focusOnPress
+                        centerLabelComponent={() => (
+                          <View style={styles.centerLabel}>
+                            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
+                              ¥{paymentMethodStats.totalExpenses.toLocaleString()}
+                            </Text>
+                          </View>
+                        )}
+                      />
+                    </View>
+                    
+                    {/* 収支情報（グラフの下に移動） */}
+                    <View style={styles.statsOverview}>
+                      <View style={styles.statsItem}>
+                        <Text style={styles.statsLabel}>収入</Text>
+                        <MoneyText
+                          amount={monthlyStats.totalIncome}
+                          isIncome={true}
+                          size="small"
+                          style={styles.incomeAmount}
+                        />
+                      </View>
+                      <View style={styles.statsItem}>
+                        <Text style={styles.statsLabel}>支出</Text>
+                        <MoneyText
+                          amount={monthlyStats.totalExpenses}
+                          isIncome={false}
+                          size="small"
+                          style={styles.expenseAmount}
+                        />
+                      </View>
+                      <View style={styles.statsItem}>
+                        <Text style={styles.statsLabel}>残高</Text>
+                        <MoneyText
+                          amount={monthlyStats.balance}
+                          isIncome={monthlyStats.balance >= 0}
+                          size="small"
+                        />
+                      </View>
+                    </View>
+                    
+                    {/* 支払い方法別の金額リスト */}
+                    <View style={styles.categoryListContainer}>
+                      {paymentMethodStats.paymentMethodData
+                        .sort((a, b) => b.amount - a.amount) // 金額の多い順にソート
+                        .map((method, index) => (
+                          <View key={index} style={styles.categoryListItem}>
+                            <View style={styles.categoryListItemLeft}>
+                              <View style={[styles.categoryColorDot, { backgroundColor: method.color }]} />
+                              <Text style={styles.categoryName} numberOfLines={1} ellipsizeMode="tail">
+                                {method.name}
+                              </Text>
+                            </View>
+                            <MoneyText
+                              amount={method.amount}
+                              isIncome={false}
+                              size="small"
+                              style={styles.categoryAmount}
+                            />
+                            <Text style={styles.categoryPercentage}>
+                              {method.percentage.toFixed(1)}%
+                            </Text>
+                          </View>
+                        ))}
+                    </View>
+                  </>
                 ) : (
                   <Text style={styles.emptyText}>データがありません</Text>
                 )}
@@ -395,10 +497,7 @@ export const HomeScreen = () => {
 
   // 引き落とし予定のセクション
   const renderUpcomingSettlementsSection = () => {
-    const hasCurrentMonthPayments = upcomingSettlements.currentMonthPayments.length > 0;
-    const hasNextMonthPayments = upcomingSettlements.nextMonthPayments.length > 0;
-
-    if (!hasCurrentMonthPayments && !hasNextMonthPayments) {
+    if (upcomingSettlements.currentMonthPayments.length === 0 && upcomingSettlements.nextMonthPayments.length === 0) {
       return null;
     }
 
@@ -409,7 +508,7 @@ export const HomeScreen = () => {
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
                 <IconButton
-                  icon="calendar-check"
+                  icon="calendar-clock"
                   size={24}
                   iconColor={theme.colors.primary}
                   style={styles.sectionIcon}
@@ -418,65 +517,79 @@ export const HomeScreen = () => {
               </View>
             </View>
             
-            {hasCurrentMonthPayments && (
+            {/* 今月の引き落とし */}
+            {upcomingSettlements.currentMonthPayments.length > 0 && (
               <View style={styles.settlementSection}>
-                <Text variant="titleSmall" style={styles.settlementTitle}>
-                  今月の引き落とし (¥{upcomingSettlements.totalCurrentMonth.toLocaleString()})
+                <Text style={styles.settlementTitle}>
+                  今月の引き落とし (
+                  <MoneyText
+                    amount={upcomingSettlements.totalCurrentMonth}
+                    isIncome={false}
+                    size="small"
+                    showSign={false}
+                  />
+                  )
                 </Text>
+
                 {upcomingSettlements.currentMonthPayments.map(payment => (
                   <View key={payment.id} style={styles.settlementItem}>
                     <View style={styles.settlementInfo}>
                       <IconButton
-                        icon={payment.type === 'credit_card' ? 'credit-card' : 'bank-transfer'}
+                        icon={getPaymentMethodIcon(payment.type)}
                         size={20}
                         iconColor={theme.colors.primary}
                         style={styles.iconButton}
                       />
                       <View>
-                        <Text variant="bodyMedium">{payment.name}</Text>
-                        <Text variant="bodySmall" style={styles.settlementDate}>
-                          {getJapaneseMonth(payment.billingDate)} {payment.billingDay}日
-                        </Text>
+                        <Text>{payment.name}</Text>
+                        <Text style={styles.settlementDate}>{payment.billingDate.getDate()}日</Text>
                       </View>
                     </View>
-                    <Text
-                      variant="bodyLarge"
+                    <MoneyText
+                      amount={payment.amount}
+                      isIncome={false}
+                      size="small"
                       style={styles.settlementAmount}
-                    >
-                      ¥{payment.amount.toLocaleString()}
-                    </Text>
+                    />
                   </View>
                 ))}
               </View>
             )}
-            
-            {hasNextMonthPayments && (
+
+            {/* 来月の引き落とし */}
+            {upcomingSettlements.nextMonthPayments.length > 0 && (
               <View style={styles.settlementSection}>
-                <Text variant="titleSmall" style={styles.settlementTitle}>
-                  来月の引き落とし (¥{upcomingSettlements.totalNextMonth.toLocaleString()})
+                <Text style={styles.settlementTitle}>
+                  来月の引き落とし (
+                  <MoneyText
+                    amount={upcomingSettlements.totalNextMonth}
+                    isIncome={false}
+                    size="small"
+                    showSign={false}
+                  />
+                  )
                 </Text>
+
                 {upcomingSettlements.nextMonthPayments.map(payment => (
                   <View key={payment.id} style={styles.settlementItem}>
                     <View style={styles.settlementInfo}>
                       <IconButton
-                        icon={payment.type === 'credit_card' ? 'credit-card' : 'bank-transfer'}
+                        icon={getPaymentMethodIcon(payment.type)}
                         size={20}
                         iconColor={theme.colors.primary}
                         style={styles.iconButton}
                       />
                       <View>
-                        <Text variant="bodyMedium">{payment.name}</Text>
-                        <Text variant="bodySmall" style={styles.settlementDate}>
-                          {getJapaneseMonth(payment.billingDate)} {payment.billingDay}日
-                        </Text>
+                        <Text>{payment.name}</Text>
+                        <Text style={styles.settlementDate}>{payment.billingDate.getDate()}日</Text>
                       </View>
                     </View>
-                    <Text
-                      variant="bodyLarge"
+                    <MoneyText
+                      amount={payment.amount}
+                      isIncome={false}
+                      size="small"
                       style={styles.settlementAmount}
-                    >
-                      ¥{payment.amount.toLocaleString()}
-                    </Text>
+                    />
                   </View>
                 ))}
               </View>
@@ -488,17 +601,34 @@ export const HomeScreen = () => {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      {renderTotalAssets()}
-      {renderAccountsSection()}
-      {renderMonthlyStatsSection()}
-      {renderUpcomingSettlementsSection()}
-    </ScrollView>
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {renderTotalAssets()}
+        {renderAccountsSection()}
+        {renderMonthlyStatsSection()}
+        {renderUpcomingSettlementsSection()}
+      </ScrollView>
+      
+      {/* 取引追加FAB */}
+      <FAB
+        style={styles.fab}
+        icon="plus"
+        label="入力"
+        onPress={() => setShowTransactionModal(true)}
+      />
+      
+      {/* 取引の簡易入力モーダル */}
+      <QuickTransactionModal
+        visible={showTransactionModal}
+        onDismiss={() => setShowTransactionModal(false)}
+        onSuccess={onRefresh}
+      />
+    </View>
   );
 };
 
@@ -524,6 +654,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     padding: 12,
   },
+  scrollView: {
+    flex: 1,
+  },
   section: {
     marginBottom: 16,
   },
@@ -535,14 +668,13 @@ const styles = StyleSheet.create({
     borderColor: COLORS.lightBlue,
   },
   cardContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    padding: 8,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   sectionTitleContainer: {
     flexDirection: 'row',
@@ -550,16 +682,12 @@ const styles = StyleSheet.create({
   },
   sectionIcon: {
     margin: 0,
-    marginRight: 4,
   },
   totalBalanceText: {
-    fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 8,
   },
   assetDetailsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
     marginTop: 8,
   },
   operatingAssetsContainer: {
@@ -569,8 +697,7 @@ const styles = StyleSheet.create({
     color: '#757575',
   },
   operatingAssetsText: {
-    fontWeight: 'bold',
-    color: COLORS.purple,
+    marginTop: 4,
   },
   accountsList: {
     marginTop: 8,
@@ -585,10 +712,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  accountIcon: {
+    margin: 0,
+    marginRight: 4,
+  },
+  accountName: {
+    fontSize: 14,
+  },
   emptyText: {
     textAlign: 'center',
     marginVertical: 16,
     color: '#757575',
+  },
+  segmentButton: {
+    flex: 1,
+    marginHorizontal: 4,
   },
   statsSelector: {
     flexDirection: 'row',
@@ -611,9 +749,6 @@ const styles = StyleSheet.create({
   statsLabel: {
     color: '#757575',
     marginBottom: 4,
-  },
-  statsAmount: {
-    fontWeight: 'bold',
   },
   incomeAmount: {
     color: COLORS.lightPurple,
@@ -662,5 +797,49 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     margin: 0,
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.purple,
+  },
+  categoryListContainer: {
+    marginTop: 16,
+  },
+  categoryListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 4,
+    justifyContent: 'space-between',
+  },
+  categoryListItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    maxWidth: '50%', // 名前部分の最大幅を50%に制限
+  },
+  categoryColorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  categoryName: {
+    flex: 1,
+    fontSize: 14,
+  },
+  categoryAmount: {
+    textAlign: 'right',
+    flex: 1,
+  },
+  categoryPercentage: {
+    color: '#757575',
+    width: 50,
+    textAlign: 'right',
+  },
+  segmentedButtons: {
+    marginBottom: 16,
   },
 }); 

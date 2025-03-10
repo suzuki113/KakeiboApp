@@ -7,6 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { getTransactions, deleteTransaction, getCategories, getPaymentMethods, getAccounts } from '../utils/storage';
 import { COLORS } from '../theme/theme';
+import MoneyText from '../components/MoneyText';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -31,7 +32,7 @@ const groupTransactionsByDate = (transactions: Transaction[]) => {
     }));
 };
 
-// 仮データ（実際の実装ではデータベースから取得）
+// ダミーの投資アイテムデータ（後で実際のデータベース連携に置き換え）
 const dummyInvestmentItems: InvestmentItem[] = [
   {
     id: '1',
@@ -132,10 +133,14 @@ export const TransactionsScreen = () => {
     const catData = await getCategories();
     const pmData = await getPaymentMethods();
     const accData = await getAccounts();
+    // 将来的には実際の投資アイテムデータをロードする
+    // const invData = await getInvestmentItems();
+    
     setTransactions(txData.sort((a, b) => b.date.getTime() - a.date.getTime()));
     setCategories(catData);
     setPaymentMethods(pmData);
     setAccounts(accData);
+    setInvestmentItems(dummyInvestmentItems); // 現在はダミーデータを使用
   };
 
   const handleDelete = async (id: string) => {
@@ -196,9 +201,11 @@ export const TransactionsScreen = () => {
     return paymentMethods.find(pm => pm.id === paymentMethodId);
   };
 
+  // 投資アイテムの取得（名前を含む）
   const getInvestmentItemById = (investmentItemId?: string) => {
     if (!investmentItemId) return null;
-    return investmentItems.find(item => item.id === investmentItemId) || null;
+    const item = investmentItems.find(item => item.id === investmentItemId);
+    return item || null;
   };
 
   // 取引タイプに応じたアイコンとカラーを取得
@@ -269,149 +276,172 @@ export const TransactionsScreen = () => {
   const renderTransactionCard = (transaction: Transaction) => {
     const category = getCategoryById(transaction.categoryId);
     const paymentMethod = getPaymentMethodById(transaction.paymentMethodId);
-    const account = getAccountById(transaction.accountId);
     const typeInfo = getTransactionTypeIconAndColor(transaction.type);
-
-    // 状態アイコンの計算
-    let statusIcon = undefined;
-    let statusIconColor = undefined;
     
-    if (transaction.status === 'pending_settlement') {
-      statusIcon = 'clock-outline';
-      statusIconColor = COLORS.lightBlue; // オレンジ色（警告色）
-    } else if (transaction.status === 'settlement') {
-      statusIcon = 'bank-transfer';
-      statusIconColor = COLORS.lightPurple; // 緑色（成功色）
-    }
-
-    // キャプションに表示される情報を構築
-    const transferAccounts = getTransferAccounts(transaction);
+    // 説明文の色を取得（取引タイプに基づくアイコン色と同じ）
+    const getDescriptionColor = () => {
+      switch (transaction.type) {
+        case 'income':
+          return COLORS.lightPurple;
+        case 'expense':
+          return COLORS.pinkPurple;
+        case 'transfer':
+          return COLORS.lightBlue;
+        case 'investment':
+          return COLORS.purple;
+        default:
+          return '#212121'; // デフォルトは黒
+      }
+    };
+    
+    const isMenuVisible = menuVisible[transaction.id] || false;
     
     return (
-      <Card style={styles.card} key={transaction.id}>
-        <TouchableOpacity
-          onPress={() => handleEdit(transaction)}
-          style={{ flex: 1 }}
-        >
-          <Card.Content>
-            <View style={styles.cardHeader}>
-              <View style={styles.leftSection}>
-                <View style={[styles.typeIconContainer, { backgroundColor: typeInfo.color }]}>
-                  <IconButton
-                    icon={typeInfo.icon}
-                    iconColor="#fff"
-                    size={18}
-                    style={styles.typeIcon}
-                  />
-                </View>
-                
-                <View style={styles.timeInfoContainer}>
-                  <Text variant="labelMedium" style={styles.time}>
-                    {formatTime(transaction.date)}
-                  </Text>
-                </View>
-              </View>
-              
-              <View style={styles.rightSection}>
-                <Text 
-                  variant="titleMedium" 
-                  style={[
-                    styles.amount, 
-                    transaction.type === 'income' ? styles.incomeAmount : 
-                    transaction.type === 'expense' ? styles.expenseAmount : 
-                    styles.transferAmount
-                  ]}
-                >
-                  {transaction.type === 'income' ? '+' : 
-                   transaction.type === 'expense' ? '-' : ''}
-                  ¥{transaction.amount.toLocaleString()}
-                </Text>
-                
+      <Card
+        style={[
+          styles.card,
+          transaction.status === 'pending_settlement' && styles.pendingCard,
+          transaction.status === 'settlement' && styles.settlementCard,
+        ]}
+        onPress={() => handleEdit(transaction)}
+      >
+        <Card.Content>
+          {transaction.relatedTransactionId && (
+            <Chip 
+              icon="link" 
+              mode="outlined" 
+              style={styles.relatedChip} 
+              onPress={() => navigateToRelatedTransaction(transaction.relatedTransactionId!)}
+            >
+              {transaction.status === 'pending_settlement' ? '引き落とし予定' : 
+               transaction.status === 'settlement' ? '引き落とし済み' : '関連取引あり'}
+            </Chip>
+          )}
+          
+          <View style={styles.headerContainer}>
+            <View style={styles.leftSection}>
+              <View style={[styles.typeIconContainer, { backgroundColor: typeInfo.color }]}>
                 <IconButton
-                  icon="dots-vertical"
-                  size={20}
-                  onPress={() => toggleMenu(transaction.id)}
-                />
-                
-                <Menu
-                  visible={menuVisible[transaction.id] || false}
-                  onDismiss={() => toggleMenu(transaction.id)}
-                  anchor={<View />}
-                >
-                  <Menu.Item 
-                    onPress={() => {
-                      toggleMenu(transaction.id);
-                      navigation.navigate('AddTransaction', { transaction });
-                    }} 
-                    title="編集" 
-                    leadingIcon="pencil"
-                  />
-                  <Menu.Item 
-                    onPress={() => {
-                      toggleMenu(transaction.id);
-                      handleDelete(transaction.id);
-                    }} 
-                    title="削除" 
-                    leadingIcon="delete"
-                  />
-                </Menu>
-              </View>
-            </View>
-            
-            <View style={styles.descriptionContainer}>
-              <Text variant="bodyLarge" style={styles.description}>
-                {transaction.description}
-              </Text>
-              
-              {statusIcon && (
-                <IconButton
-                  icon={statusIcon}
+                  icon={typeInfo.icon}
+                  iconColor="#fff"
                   size={18}
-                  iconColor={statusIconColor}
-                  style={styles.statusIcon}
+                  style={styles.typeIcon}
                 />
-              )}
+              </View>
+              
+              <View style={styles.timeInfoContainer}>
+                <Text variant="labelMedium" style={styles.time}>
+                  {formatTime(transaction.date)}
+                </Text>
+              </View>
             </View>
             
-            <View style={styles.iconsContainer}>
-              {category && transaction.type !== 'transfer' && (
-                <View style={[styles.infoIconContainer, { borderColor: category.color }]}>
-                  <Text style={[styles.infoIconText, { color: category.color }]}>
-                    {category.name}
-                  </Text>
-                </View>
-              )}
+            <View style={styles.rightSection}>
+              <MoneyText
+                amount={transaction.amount}
+                isIncome={transaction.type === 'income'}
+                showSign={transaction.type === 'income'}
+                size="medium"
+                style={styles.amount}
+                type={transaction.type}
+              />
               
-              {paymentMethod && transaction.type !== 'transfer' && (
-                <IconButton
-                  icon={getPaymentMethodIcon(paymentMethod.type)}
-                  size={16}
-                  style={styles.infoIcon}
-                  iconColor={theme.colors.primary}
+              <Menu
+                visible={isMenuVisible}
+                onDismiss={() => toggleMenu(transaction.id)}
+                anchor={
+                  <IconButton
+                    icon="dots-vertical"
+                    size={20}
+                    onPress={() => toggleMenu(transaction.id)}
+                  />
+                }
+              >
+                <Menu.Item 
+                  onPress={() => {
+                    toggleMenu(transaction.id);
+                    navigation.navigate('AddTransaction', { transaction });
+                  }} 
+                  title="編集" 
+                  leadingIcon="pencil"
                 />
-              )}
-              
-              {account && (
-                <IconButton
-                  icon={getAccountIcon(account.type)}
-                  size={16}
-                  style={styles.infoIcon}
-                  iconColor={theme.colors.primary}
+                <Menu.Item 
+                  onPress={() => {
+                    toggleMenu(transaction.id);
+                    handleDelete(transaction.id);
+                  }} 
+                  title="削除" 
+                  leadingIcon="delete"
                 />
-              )}
-              
-              {transaction.relatedTransactionId && (
-                <IconButton
-                  icon="link-variant"
-                  size={16}
-                  style={styles.infoIcon}
-                  iconColor={theme.colors.primary}
-                  onPress={() => navigateToRelatedTransaction(transaction.relatedTransactionId!)}
-                />
-              )}
+              </Menu>
             </View>
-          </Card.Content>
-        </TouchableOpacity>
+          </View>
+          
+          <View style={styles.descriptionContainer}>
+            <Text 
+              variant="bodyLarge" 
+              style={[styles.description, { color: getDescriptionColor() }]}
+            >
+              {transaction.description}
+            </Text>
+          </View>
+          
+          <View style={styles.iconsContainer}>
+            {transaction.type === 'expense' && (
+              <>
+                {category && (
+                  <View style={[styles.infoIconContainer, { borderColor: category.color }]}>
+                    <Text style={[styles.infoIconText, { color: category.color }]}>
+                      {category.name}
+                    </Text>
+                  </View>
+                )}
+                
+                {paymentMethod && (
+                  <IconButton
+                    icon={getPaymentMethodIcon(paymentMethod.type)}
+                    size={16}
+                    style={styles.infoIcon}
+                    iconColor={theme.colors.primary}
+                  />
+                )}
+              </>
+            )}
+            
+            {transaction.type === 'income' && (
+              <>
+                {category && (
+                  <View style={[styles.infoIconContainer, { borderColor: category.color }]}>
+                    <Text style={[styles.infoIconText, { color: category.color }]}>
+                      {category.name}
+                    </Text>
+                  </View>
+                )}
+              </>
+            )}
+            
+            {transaction.type === 'investment' && (
+              <>
+                {transaction.investmentItemId && (
+                  <View style={[styles.infoIconContainer, { borderColor: theme.colors.primary }]}>
+                    <Text style={[styles.infoIconText, { color: theme.colors.primary }]}>
+                      {getInvestmentItemById(transaction.investmentItemId)?.name || '投資'}
+                    </Text>
+                  </View>
+                )}
+                
+                {paymentMethod && (
+                  <IconButton
+                    icon={getPaymentMethodIcon(paymentMethod.type)}
+                    size={16}
+                    style={styles.infoIcon}
+                    iconColor={theme.colors.primary}
+                  />
+                )}
+              </>
+            )}
+          </View>
+        </Card.Content>
       </Card>
     );
   };
@@ -572,7 +602,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.lightBlue,
   },
-  cardHeader: {
+  headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -606,15 +636,7 @@ const styles = StyleSheet.create({
   },
   amount: {
     fontWeight: 'bold',
-  },
-  incomeAmount: {
-    color: COLORS.lightPurple,
-  },
-  expenseAmount: {
-    color: COLORS.pinkPurple,
-  },
-  transferAmount: {
-    color: COLORS.lightBlue,
+    marginRight: 4,
   },
   descriptionContainer: {
     flexDirection: 'row',
@@ -623,11 +645,7 @@ const styles = StyleSheet.create({
   },
   description: {
     flex: 1,
-  },
-  statusIcon: {
-    margin: 0,
-    width: 24,
-    height: 24,
+    fontWeight: '500',
   },
   iconsContainer: {
     flexDirection: 'row',

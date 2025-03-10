@@ -229,11 +229,6 @@ export const AddTransactionScreen = () => {
       return false;
     }
     
-    if (!description.trim()) {
-      setError('説明を入力してください');
-      return false;
-    }
-    
     if (!selectedCategory && type !== 'transfer' && type !== 'investment') {
       setError('カテゴリーを選択してください');
       return false;
@@ -286,11 +281,17 @@ export const AddTransactionScreen = () => {
           return;
         }
         
+        // 説明が空の場合、振替取引のデフォルト説明を設定
+        let descriptionText = description.trim();
+        if (!descriptionText) {
+          descriptionText = `${sourceAccount.name}から${destinationAccount.name}への振替`;
+        }
+        
         const transferTransaction = {
           type,
           amount: amountValue,
           date,
-          description,
+          description: descriptionText,
           categoryId: selectedCategory ? selectedCategory.id : '',
           accountId: destinationAccount.id, // 振替先
           paymentMethodId: sourceAccount.id, // 振替元
@@ -303,11 +304,23 @@ export const AddTransactionScreen = () => {
         }
       } else {
         // 通常の取引の場合
+        // 説明が空の場合のデフォルト説明を設定
+        let descriptionText = description.trim();
+        if (!descriptionText) {
+          if (type === 'investment' && selectedInvestmentItem) {
+            descriptionText = `${selectedInvestmentItem.name}への投資`;
+          } else if (selectedCategory) {
+            descriptionText = `${selectedCategory.name}の${type === 'expense' ? '支出' : '収入'}`;
+          } else {
+            descriptionText = type === 'expense' ? '支出' : type === 'income' ? '収入' : '取引';
+          }
+        }
+        
         let transactionData = {
           type,
           amount: amountValue,
           date,
-          description,
+          description: descriptionText,
           categoryId: selectedCategory ? selectedCategory.id : '',
           accountId: selectedAccount ? selectedAccount.id : '',
           paymentMethodId: selectedPaymentMethod ? selectedPaymentMethod.id : '',

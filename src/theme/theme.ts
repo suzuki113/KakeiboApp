@@ -6,6 +6,14 @@ export const COLORS = {
   lightBlue: '#B9C9EB',
   purple: '#AB89F0',
   white: '#FFFFFF',
+  
+  textBlack: '#212121',
+  textGrey: '#757575',
+  textRed: '#E53935',
+  
+  iconPrimary: '#AB89F0',
+  iconSecondary: '#BAB9EB',
+  iconAccent: '#EAB9EB',
 };
 
 export const theme = {
@@ -19,6 +27,14 @@ export const theme = {
     background: COLORS.white,
     surface: COLORS.white,
     surfaceVariant: COLORS.lightBlue,
+    
+    moneyPositive: COLORS.textBlack,
+    moneyNegative: COLORS.textRed,
+    moneyNeutral: COLORS.textGrey,
+    
+    iconPrimary: COLORS.iconPrimary,
+    iconSecondary: COLORS.iconSecondary,
+    iconAccent: COLORS.iconAccent,
   },
 };
 

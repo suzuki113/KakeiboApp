@@ -70,7 +70,7 @@ const MainTabs = () => {
         name="Home"
         component={HomeScreen}
         options={{
-          title: 'ホーム',
+          title: 'Home',
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.tabIconContainer}>
               <IconButton icon="home" size={28} iconColor={color} />
@@ -83,7 +83,7 @@ const MainTabs = () => {
         name="Transactions"
         component={TransactionsScreen}
         options={{
-          title: '取引履歴',
+          title: 'Transactions',
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.tabIconContainer}>
               <IconButton icon="format-list-bulleted" size={28} iconColor={color} />
@@ -96,7 +96,7 @@ const MainTabs = () => {
         name="DebitCalendar"
         component={DebitCalendarScreen}
         options={{
-          title: '引落カレンダー',
+          title: 'Debit Calendar',
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.tabIconContainer}>
               <IconButton icon="calendar" size={28} iconColor={color} />
@@ -109,7 +109,7 @@ const MainTabs = () => {
         name="Settings"
         component={SettingsScreen}
         options={{
-          title: '設定',
+          title: 'Settings',
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.tabIconContainer}>
               <IconButton icon="cog" size={28} iconColor={color} />
@@ -133,78 +133,80 @@ export const AppNavigator = () => {
       <Stack.Screen
         name="AddTransaction"
         component={AddTransactionScreen}
-        options={{ title: '新規取引' }}
+        options={({ route }) => ({
+          title: route.params?.transaction ? 'Edit Transaction' : 'New Transaction'
+        })}
       />
       <Stack.Screen
         name="CategoryList"
         component={CategoryListScreen}
-        options={{ title: 'カテゴリー管理' }}
+        options={{ title: 'Category Management' }}
       />
       <Stack.Screen
         name="AddCategory"
         component={CategoryFormScreen}
-        options={{ title: 'カテゴリー追加' }}
+        options={{ title: 'Add Category' }}
       />
       <Stack.Screen
         name="EditCategory"
         component={CategoryFormScreen}
-        options={{ title: 'カテゴリー編集' }}
+        options={{ title: 'Edit Category' }}
       />
       <Stack.Screen
         name="PaymentMethodList"
         component={PaymentMethodListScreen}
-        options={{ title: '支払い方法管理' }}
+        options={{ title: 'Payment Method Management' }}
       />
       <Stack.Screen
         name="AddPaymentMethod"
         component={PaymentMethodFormScreen}
-        options={{ title: '支払い方法追加' }}
+        options={{ title: 'Add Payment Method' }}
       />
       <Stack.Screen
         name="EditPaymentMethod"
         component={PaymentMethodFormScreen}
-        options={{ title: '支払い方法編集' }}
+        options={{ title: 'Edit Payment Method' }}
       />
       <Stack.Screen
         name="AccountList"
         component={AccountListScreen}
-        options={{ title: '口座管理' }}
+        options={{ title: 'Account Management' }}
       />
       <Stack.Screen
         name="AddAccount"
         component={AccountFormScreen}
-        options={{ title: '口座追加' }}
+        options={{ title: 'Add Account' }}
       />
       <Stack.Screen
         name="EditAccount"
         component={AccountFormScreen}
-        options={{ title: '口座編集' }}
+        options={{ title: 'Edit Account' }}
       />
       <Stack.Screen
         name="InvestmentItemList"
         component={InvestmentListScreen}
-        options={{ title: '投資銘柄管理' }}
+        options={{ title: 'Investment Item Management' }}
       />
       <Stack.Screen
         name="AddInvestmentItem"
         component={InvestmentItemFormScreen}
-        options={{ title: '投資銘柄追加' }}
+        options={{ title: 'Add Investment Item' }}
       />
       <Stack.Screen
         name="EditInvestmentItem"
         component={InvestmentItemFormScreen}
-        options={{ title: '投資銘柄編集' }}
+        options={{ title: 'Edit Investment Item' }}
       />
       <Stack.Screen
         name="RecurringTransactionList"
         component={RecurringTransactionListScreen}
-        options={{ title: '定期取引管理' }}
+        options={{ title: 'Recurring Transaction Management' }}
       />
       <Stack.Screen
         name="RecurringTransactionForm"
         component={RecurringTransactionFormScreen}
         options={({ route }) => ({
-          title: route.params?.recurringTransactionId ? '定期取引編集' : '定期取引追加'
+          title: route.params?.recurringTransactionId ? 'Edit Recurring Transaction' : 'Add Recurring Transaction'
         })}
       />
     </Stack.Navigator>

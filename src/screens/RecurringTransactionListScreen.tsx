@@ -363,7 +363,7 @@ const RecurringTransactionListScreen = () => {
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={() => navigation.navigate('RecurringTransactionForm')}
+        onPress={() => navigation.navigate('RecurringTransactionForm', {})}
       />
     </View>
   );

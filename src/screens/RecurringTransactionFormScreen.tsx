@@ -64,9 +64,9 @@ const RecurringTransactionFormScreen = () => {
   const [monthOfYear, setMonthOfYear] = useState('');
   
   // 取引情報
-  const [categoryId, setCategoryId] = useState('');
-  const [accountId, setAccountId] = useState('');
-  const [paymentMethodId, setPaymentMethodId] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   
   // ステータス
   const [status, setStatus] = useState<RecurringTransactionStatus>('active');
@@ -76,7 +76,13 @@ const RecurringTransactionFormScreen = () => {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   
-  // 日付選択モーダル
+  // セクション表示状態
+  const [showCategorySection, setShowCategorySection] = useState(false);
+  const [showAccountSection, setShowAccountSection] = useState(false);
+  const [showPaymentMethodSection, setShowPaymentMethodSection] = useState(false);
+  const [showFrequencySection, setShowFrequencySection] = useState(false);
+  
+  // 日付選択
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   
@@ -85,7 +91,7 @@ const RecurringTransactionFormScreen = () => {
   const [simulationDates, setSimulationDates] = useState<Date[]>([]);
   
   // バリデーションエラー
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [error, setError] = useState<string | null>(null);
   
   // データ読み込み
   const loadData = async () => {
@@ -104,22 +110,32 @@ const RecurringTransactionFormScreen = () => {
       if (catsData.length > 0) {
         const defaultCategory = catsData.find(c => c.type === type && c.isActive);
         if (defaultCategory) {
-          setCategoryId(defaultCategory.id);
+          setSelectedCategory(defaultCategory);
         }
       }
       
       if (accsData.length > 0) {
         const defaultAccount = accsData.find(a => a.isActive);
         if (defaultAccount) {
-          setAccountId(defaultAccount.id);
+          setSelectedAccount(defaultAccount);
         }
       }
       
       if (pmData.length > 0) {
         const defaultPaymentMethod = pmData.find(pm => pm.isActive);
         if (defaultPaymentMethod) {
-          setPaymentMethodId(defaultPaymentMethod.id);
+          setSelectedPaymentMethod(defaultPaymentMethod);
         }
+      }
+      
+      // 初期値の設定（日付などその他の項目）
+      if (frequency === 'monthly') {
+        setDayOfMonth(startDate.getDate().toString());
+      } else if (frequency === 'weekly') {
+        setDayOfWeek(startDate.getDay().toString());
+      } else if (frequency === 'yearly') {
+        setMonthOfYear((startDate.getMonth() + 1).toString());
+        setDayOfMonth(startDate.getDate().toString());
       }
       
       // 編集モードの場合は既存データを読み込む
@@ -155,9 +171,22 @@ const RecurringTransactionFormScreen = () => {
             setMonthOfYear(recurringTransaction.monthOfYear.toString());
           }
           
-          setCategoryId(recurringTransaction.categoryId);
-          setAccountId(recurringTransaction.accountId);
-          setPaymentMethodId(recurringTransaction.paymentMethodId);
+          // カテゴリ、口座、支払い方法オブジェクトを設定
+          const category = catsData.find(c => c.id === recurringTransaction.categoryId);
+          if (category) {
+            setSelectedCategory(category);
+          }
+          
+          const account = accsData.find(a => a.id === recurringTransaction.accountId);
+          if (account) {
+            setSelectedAccount(account);
+          }
+          
+          const paymentMethod = pmData.find(pm => pm.id === recurringTransaction.paymentMethodId);
+          if (paymentMethod) {
+            setSelectedPaymentMethod(paymentMethod);
+          }
+          
           setStatus(recurringTransaction.status);
         }
       }
@@ -176,56 +205,104 @@ const RecurringTransactionFormScreen = () => {
   useEffect(() => {
     const matchingCategory = categories.find(c => c.type === type && c.isActive);
     if (matchingCategory) {
-      setCategoryId(matchingCategory.id);
+      setSelectedCategory(matchingCategory);
+    } else {
+      setSelectedCategory(null);
     }
   }, [type, categories]);
   
+  // 支払い方法が変更されたときに口座を自動設定
+  useEffect(() => {
+    if (type === 'expense' && selectedPaymentMethod) {
+      const paymentMethodAccount = accounts.find(acc => acc.id === selectedPaymentMethod.accountId);
+      if (paymentMethodAccount) {
+        setSelectedAccount(paymentMethodAccount);
+      }
+    }
+  }, [selectedPaymentMethod, type]);
+  
+  // セクションの切り替え
+  const toggleCategorySection = () => {
+    setShowCategorySection(!showCategorySection);
+    if (showPaymentMethodSection) setShowPaymentMethodSection(false);
+    if (showAccountSection) setShowAccountSection(false);
+    if (showFrequencySection) setShowFrequencySection(false);
+  };
+
+  const togglePaymentMethodSection = () => {
+    setShowPaymentMethodSection(!showPaymentMethodSection);
+    if (showCategorySection) setShowCategorySection(false);
+    if (showAccountSection) setShowAccountSection(false);
+    if (showFrequencySection) setShowFrequencySection(false);
+  };
+
+  const toggleAccountSection = () => {
+    setShowAccountSection(!showAccountSection);
+    if (showCategorySection) setShowCategorySection(false);
+    if (showPaymentMethodSection) setShowPaymentMethodSection(false);
+    if (showFrequencySection) setShowFrequencySection(false);
+  };
+  
+  const toggleFrequencySection = () => {
+    setShowFrequencySection(!showFrequencySection);
+    if (showCategorySection) setShowCategorySection(false);
+    if (showPaymentMethodSection) setShowPaymentMethodSection(false);
+    if (showAccountSection) setShowAccountSection(false);
+  };
+  
   // フォームのバリデーション
   const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
-    
     if (!title.trim()) {
-      newErrors.title = 'タイトルを入力してください';
+      setError('タイトルを入力してください');
+      return false;
     }
     
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      newErrors.amount = '有効な金額を入力してください';
+      setError('有効な金額を入力してください');
+      return false;
     }
     
     if (!interval || isNaN(Number(interval)) || Number(interval) <= 0) {
-      newErrors.interval = '有効な間隔を入力してください';
+      setError('有効な間隔を入力してください');
+      return false;
     }
     
     if (frequency === 'monthly' && (!dayOfMonth || isNaN(Number(dayOfMonth)) || Number(dayOfMonth) < 1 || Number(dayOfMonth) > 31)) {
-      newErrors.dayOfMonth = '1から31の間で日付を入力してください';
+      setError('1から31の間で日付を入力してください');
+      return false;
     }
     
     if (frequency === 'weekly' && (dayOfWeek === '' || isNaN(Number(dayOfWeek)) || Number(dayOfWeek) < 0 || Number(dayOfWeek) > 6)) {
-      newErrors.dayOfWeek = '曜日を選択してください';
+      setError('曜日を選択してください');
+      return false;
     }
     
     if (frequency === 'yearly' && (!monthOfYear || isNaN(Number(monthOfYear)) || Number(monthOfYear) < 1 || Number(monthOfYear) > 12)) {
-      newErrors.monthOfYear = '1から12の間で月を入力してください';
+      setError('1から12の間で月を入力してください');
+      return false;
     }
     
-    if (!categoryId) {
-      newErrors.categoryId = 'カテゴリを選択してください';
+    if (!selectedCategory) {
+      setError('カテゴリを選択してください');
+      return false;
     }
     
-    if (!accountId) {
-      newErrors.accountId = '口座を選択してください';
+    if (type === 'income' && !selectedAccount) {
+      setError('口座を選択してください');
+      return false;
     }
     
-    if (!paymentMethodId) {
-      newErrors.paymentMethodId = '支払い方法を選択してください';
+    if (!selectedPaymentMethod) {
+      setError('支払い方法を選択してください');
+      return false;
     }
     
     if (hasEndDate && endDate <= startDate) {
-      newErrors.endDate = '終了日は開始日より後にしてください';
+      setError('終了日は開始日より後にしてください');
+      return false;
     }
     
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return true;
   };
   
   // フォーム送信処理
@@ -235,6 +312,11 @@ const RecurringTransactionFormScreen = () => {
     }
     
     try {
+      // 支出タイプの場合、支払い方法に紐づく口座IDを使用
+      const accountIdToUse = type === 'expense' && selectedPaymentMethod 
+        ? selectedPaymentMethod.accountId 
+        : selectedAccount?.id || '';
+        
       const recurringTransactionData: Omit<RecurringTransaction, 'id' | 'createdAt' | 'updatedAt'> = {
         title: title.trim(),
         type,
@@ -243,13 +325,13 @@ const RecurringTransactionFormScreen = () => {
         endDate: hasEndDate ? endDate : undefined,
         frequency,
         interval: Number(interval),
-        dayOfMonth: frequency === 'monthly' ? Number(dayOfMonth) : undefined,
+        dayOfMonth: frequency === 'monthly' || frequency === 'yearly' ? Number(dayOfMonth) : undefined,
         dayOfWeek: frequency === 'weekly' ? Number(dayOfWeek) : undefined,
         monthOfYear: frequency === 'yearly' ? Number(monthOfYear) : undefined,
         description: title.trim(),
-        categoryId,
-        accountId,
-        paymentMethodId,
+        categoryId: selectedCategory ? selectedCategory.id : '',
+        accountId: accountIdToUse,
+        paymentMethodId: selectedPaymentMethod ? selectedPaymentMethod.id : '',
         status,
         lastGeneratedDate: undefined,
       };
@@ -276,6 +358,11 @@ const RecurringTransactionFormScreen = () => {
     }
     
     try {
+      // 支出タイプの場合、支払い方法に紐づく口座IDを使用
+      const accountIdToUse = type === 'expense' && selectedPaymentMethod 
+        ? selectedPaymentMethod.accountId 
+        : selectedAccount?.id || '';
+        
       const recurringTransactionData: RecurringTransaction = {
         id: 'simulation',
         title: title.trim(),
@@ -285,13 +372,13 @@ const RecurringTransactionFormScreen = () => {
         endDate: hasEndDate ? endDate : undefined,
         frequency,
         interval: Number(interval),
-        dayOfMonth: frequency === 'monthly' ? Number(dayOfMonth) : undefined,
+        dayOfMonth: frequency === 'monthly' || frequency === 'yearly' ? Number(dayOfMonth) : undefined,
         dayOfWeek: frequency === 'weekly' ? Number(dayOfWeek) : undefined,
         monthOfYear: frequency === 'yearly' ? Number(monthOfYear) : undefined,
         description: title.trim(),
-        categoryId,
-        accountId,
-        paymentMethodId,
+        categoryId: selectedCategory ? selectedCategory.id : '',
+        accountId: accountIdToUse,
+        paymentMethodId: selectedPaymentMethod ? selectedPaymentMethod.id : '',
         status: 'active',
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -316,86 +403,59 @@ const RecurringTransactionFormScreen = () => {
     return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
   };
   
-  return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        {/* 基本情報セクション */}
-        <Text variant="titleMedium" style={styles.sectionTitle}>基本情報</Text>
-        
-        <TextInput
-          label="タイトル"
-          value={title}
-          onChangeText={(text) => {
-            setTitle(text);
-            setErrors({...errors, title: ''});
-          }}
-          style={styles.input}
-          error={!!errors.title}
-        />
-        {errors.title && <HelperText type="error">{errors.title}</HelperText>}
-        
-        <TextInput
-          label="金額"
-          value={amount}
-          onChangeText={(text) => {
-            setAmount(text);
-            setErrors({...errors, amount: ''});
-          }}
-          keyboardType="numeric"
-          style={styles.input}
-          error={!!errors.amount}
-        />
-        {errors.amount && <HelperText type="error">{errors.amount}</HelperText>}
-        
-        <Text style={styles.label}>種類</Text>
-        <SegmentedButtons
-          value={type}
-          onValueChange={(value) => setType(value as TransactionType)}
-          buttons={[
-            { value: 'expense', label: '支出' },
-            { value: 'income', label: '収入' },
-          ]}
-          style={styles.segmentedButtons}
-        />
-        
-        <Text style={styles.label}>開始日</Text>
-        <TouchableOpacity
-          style={styles.datePickerButton}
-          onPress={() => setShowStartDatePicker(true)}
-        >
-          <Text>{formatDateJP(startDate)}</Text>
-          <IconButton icon="calendar" size={20} iconColor={theme.colors.primary} />
-        </TouchableOpacity>
-        
-        <View style={styles.switchContainer}>
-          <Text>終了日を設定する</Text>
-          <Switch
-            value={hasEndDate}
-            onValueChange={setHasEndDate}
-            color={theme.colors.primary}
-          />
-        </View>
-        
-        {hasEndDate && (
-          <>
-            <Text style={styles.label}>終了日</Text>
-            <TouchableOpacity
-              style={styles.datePickerButton}
-              onPress={() => setShowEndDatePicker(true)}
-            >
-              <Text>{formatDateJP(endDate)}</Text>
-              <IconButton icon="calendar" size={20} iconColor={theme.colors.primary} />
-            </TouchableOpacity>
-            {errors.endDate && <HelperText type="error">{errors.endDate}</HelperText>}
-          </>
-        )}
-        
-        <Divider style={styles.divider} />
-        
-        {/* 繰り返し設定セクション */}
-        <Text variant="titleMedium" style={styles.sectionTitle}>繰り返し設定</Text>
-        
-        <Text style={styles.label}>頻度</Text>
+  // 頻度ラベルを取得
+  const getFrequencyLabel = () => {
+    let label = '';
+    switch(frequency) {
+      case 'daily':
+        label = `${interval}日ごと`;
+        break;
+      case 'weekly':
+        const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+        label = `${interval}週間ごと`;
+        if (dayOfWeek !== '') {
+          label += `（${weekdays[parseInt(dayOfWeek)]}曜日）`;
+        }
+        break;
+      case 'monthly':
+        label = `${interval}ヶ月ごと`;
+        if (dayOfMonth) {
+          label += `（${dayOfMonth}日）`;
+        }
+        break;
+      case 'yearly':
+        label = `${interval}年ごと`;
+        if (monthOfYear && dayOfMonth) {
+          label += `（${monthOfYear}月${dayOfMonth}日）`;
+        }
+        break;
+    }
+    return label;
+  };
+  
+  // 選択中の曜日をレンダリング
+  const renderDayOfWeekSelector = () => {
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+    return (
+      <View style={styles.weekdayContainer}>
+        {weekdays.map((day, index) => (
+          <View key={index} style={styles.weekdayItem}>
+            <RadioButton
+              value={index.toString()}
+              status={dayOfWeek === index.toString() ? 'checked' : 'unchecked'}
+              onPress={() => setDayOfWeek(index.toString())}
+            />
+            <Text>{day}</Text>
+          </View>
+        ))}
+      </View>
+    );
+  };
+  
+  // 頻度設定セクション
+  const renderFrequencySection = () => {
+    return (
+      <>
         <RadioButton.Group
           value={frequency}
           onValueChange={(value) => setFrequency(value as RecurrenceFrequency)}
@@ -421,13 +481,9 @@ const RecurringTransactionFormScreen = () => {
         <TextInput
           label="間隔"
           value={interval}
-          onChangeText={(text) => {
-            setInterval(text);
-            setErrors({...errors, interval: ''});
-          }}
+          onChangeText={setInterval}
           keyboardType="numeric"
           style={styles.input}
-          error={!!errors.interval}
           right={<TextInput.Affix text={
             frequency === 'daily' ? '日ごと' :
             frequency === 'weekly' ? '週間ごと' :
@@ -435,149 +491,238 @@ const RecurringTransactionFormScreen = () => {
             '年ごと'
           } />}
         />
-        {errors.interval && <HelperText type="error">{errors.interval}</HelperText>}
         
         {frequency === 'monthly' && (
-          <>
-            <TextInput
-              label="日にち"
-              value={dayOfMonth}
-              onChangeText={(text) => {
-                setDayOfMonth(text);
-                setErrors({...errors, dayOfMonth: ''});
-              }}
-              keyboardType="numeric"
-              style={styles.input}
-              error={!!errors.dayOfMonth}
-              right={<TextInput.Affix text="日" />}
-            />
-            {errors.dayOfMonth && <HelperText type="error">{errors.dayOfMonth}</HelperText>}
-          </>
+          <TextInput
+            label="日付"
+            value={dayOfMonth}
+            onChangeText={setDayOfMonth}
+            keyboardType="numeric"
+            style={styles.input}
+            right={<TextInput.Affix text="日" />}
+          />
         )}
         
-        {frequency === 'weekly' && (
-          <>
-            <Text style={styles.label}>曜日</Text>
-            <RadioButton.Group
-              value={dayOfWeek}
-              onValueChange={(value) => {
-                setDayOfWeek(value);
-                setErrors({...errors, dayOfWeek: ''});
-              }}
-            >
-              <View style={styles.weekdayContainer}>
-                {['日', '月', '火', '水', '木', '金', '土'].map((day, index) => (
-                  <View key={index} style={styles.weekdayItem}>
-                    <RadioButton value={index.toString()} />
-                    <Text>{day}</Text>
-                  </View>
-                ))}
-              </View>
-            </RadioButton.Group>
-            {errors.dayOfWeek && <HelperText type="error">{errors.dayOfWeek}</HelperText>}
-          </>
-        )}
+        {frequency === 'weekly' && renderDayOfWeekSelector()}
         
         {frequency === 'yearly' && (
           <>
             <TextInput
               label="月"
               value={monthOfYear}
-              onChangeText={(text) => {
-                setMonthOfYear(text);
-                setErrors({...errors, monthOfYear: ''});
-              }}
+              onChangeText={setMonthOfYear}
               keyboardType="numeric"
               style={styles.input}
-              error={!!errors.monthOfYear}
               right={<TextInput.Affix text="月" />}
             />
-            {errors.monthOfYear && <HelperText type="error">{errors.monthOfYear}</HelperText>}
             
             <TextInput
               label="日"
               value={dayOfMonth}
-              onChangeText={(text) => {
-                setDayOfMonth(text);
-                setErrors({...errors, dayOfMonth: ''});
-              }}
+              onChangeText={setDayOfMonth}
               keyboardType="numeric"
               style={styles.input}
-              error={!!errors.dayOfMonth}
               right={<TextInput.Affix text="日" />}
             />
-            {errors.dayOfMonth && <HelperText type="error">{errors.dayOfMonth}</HelperText>}
           </>
         )}
+      </>
+    );
+  };
+  
+  // 支払い方法のアイコンを取得
+  const getPaymentMethodIcon = (type: string): string => {
+    switch (type) {
+      case 'cash':
+        return 'cash';
+      case 'credit_card':
+        return 'credit-card';
+      case 'bank_transfer':
+        return 'bank';
+      case 'electronic_money':
+        return 'cellphone';
+      case 'direct_debit':
+        return 'bank-transfer';
+      default:
+        return 'cash';
+    }
+  };
+  
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.content}>
+        <Text variant="titleMedium" style={styles.label}>取引タイプ</Text>
+        <SegmentedButtons
+          value={type}
+          onValueChange={(value) => setType(value as TransactionType)}
+          buttons={[
+            { value: 'expense', label: '支出' },
+            { value: 'income', label: '収入' },
+          ]}
+          style={styles.segmentedButtons}
+        />
         
-        <Divider style={styles.divider} />
+        <TextInput
+          label="タイトル"
+          value={title}
+          onChangeText={setTitle}
+          style={styles.input}
+        />
         
-        {/* 取引情報セクション */}
-        <Text variant="titleMedium" style={styles.sectionTitle}>取引情報</Text>
+        <TextInput
+          label="金額"
+          value={amount}
+          onChangeText={setAmount}
+          keyboardType="numeric"
+          style={styles.input}
+        />
         
-        <Text style={styles.label}>カテゴリ</Text>
-        <RadioButton.Group
-          value={categoryId}
-          onValueChange={(value) => {
-            setCategoryId(value);
-            setErrors({...errors, categoryId: ''});
-          }}
+        {/* カテゴリ選択アコーディオン */}
+        <List.Accordion
+          title={selectedCategory ? selectedCategory.name : "カテゴリーを選択"}
+          left={props => <List.Icon {...props} icon={selectedCategory?.icon || "folder"} color={selectedCategory?.color || "#000"} />}
+          expanded={showCategorySection}
+          onPress={toggleCategorySection}
+          style={styles.accordion}
         >
-          <ScrollView horizontal style={styles.categorySelector}>
-            {categories
-              .filter(c => c.type === type)
-              .map(category => (
-                <View key={category.id} style={styles.categoryItem}>
-                  <RadioButton value={category.id} />
-                  <Text style={{ color: category.color }}>{category.name}</Text>
-                </View>
-              ))}
-          </ScrollView>
-        </RadioButton.Group>
-        {errors.categoryId && <HelperText type="error">{errors.categoryId}</HelperText>}
+          {categories.filter(c => c.type === type).map(category => (
+            <List.Item
+              key={category.id}
+              title={category.name}
+              left={props => (
+                <List.Icon {...props} icon={category.icon} color={category.color} />
+              )}
+              onPress={() => {
+                setSelectedCategory(category);
+                setShowCategorySection(false);
+              }}
+              style={[
+                styles.categoryItem,
+                selectedCategory?.id === category.id && styles.selectedItem,
+              ]}
+            />
+          ))}
+          <Button
+            mode="text"
+            onPress={() => navigation.navigate('CategoryList')}
+            style={styles.addButton}
+          >
+            カテゴリーを管理
+          </Button>
+        </List.Accordion>
         
-        <Text style={styles.label}>口座</Text>
-        <RadioButton.Group
-          value={accountId}
-          onValueChange={(value) => {
-            setAccountId(value);
-            setErrors({...errors, accountId: ''});
-          }}
-        >
-          <ScrollView horizontal style={styles.horizontalSelector}>
+        {/* 口座選択アコーディオン（収入の場合のみ表示） */}
+        {type === 'income' && (
+          <List.Accordion
+            title={selectedAccount ? selectedAccount.name : "口座を選択"}
+            left={props => <List.Icon {...props} icon="bank" />}
+            expanded={showAccountSection}
+            onPress={toggleAccountSection}
+            style={styles.accordion}
+          >
             {accounts.map(account => (
-              <View key={account.id} style={styles.selectorItem}>
-                <RadioButton value={account.id} />
-                <Text>{account.name}</Text>
-              </View>
+              <List.Item
+                key={account.id}
+                title={account.name}
+                description={`残高: ¥${account.balance.toLocaleString()}`}
+                left={props => (
+                  <List.Icon {...props} icon="bank" />
+                )}
+                onPress={() => {
+                  setSelectedAccount(account);
+                  setShowAccountSection(false);
+                }}
+                style={[
+                  styles.accountItem,
+                  selectedAccount?.id === account.id && styles.selectedItem,
+                ]}
+              />
             ))}
-          </ScrollView>
-        </RadioButton.Group>
-        {errors.accountId && <HelperText type="error">{errors.accountId}</HelperText>}
+            <Button
+              mode="text"
+              onPress={() => navigation.navigate('AccountList')}
+              style={styles.addButton}
+            >
+              口座を管理
+            </Button>
+          </List.Accordion>
+        )}
         
-        <Text style={styles.label}>支払い方法</Text>
-        <RadioButton.Group
-          value={paymentMethodId}
-          onValueChange={(value) => {
-            setPaymentMethodId(value);
-            setErrors({...errors, paymentMethodId: ''});
-          }}
+        {/* 支払い方法選択アコーディオン */}
+        <List.Accordion
+          title={selectedPaymentMethod ? selectedPaymentMethod.name : "支払い方法を選択"}
+          left={props => <List.Icon {...props} icon={getPaymentMethodIcon(selectedPaymentMethod?.type || 'cash')} />}
+          expanded={showPaymentMethodSection}
+          onPress={togglePaymentMethodSection}
+          style={styles.accordion}
         >
-          <ScrollView horizontal style={styles.horizontalSelector}>
-            {paymentMethods.map(paymentMethod => (
-              <View key={paymentMethod.id} style={styles.selectorItem}>
-                <RadioButton value={paymentMethod.id} />
-                <Text>{paymentMethod.name}</Text>
-              </View>
-            ))}
-          </ScrollView>
-        </RadioButton.Group>
-        {errors.paymentMethodId && <HelperText type="error">{errors.paymentMethodId}</HelperText>}
+          {paymentMethods.map(method => (
+            <List.Item
+              key={method.id}
+              title={method.name}
+              left={props => (
+                <List.Icon {...props} icon={getPaymentMethodIcon(method.type)} />
+              )}
+              onPress={() => {
+                setSelectedPaymentMethod(method);
+                setShowPaymentMethodSection(false);
+              }}
+              style={[
+                styles.paymentMethodItem,
+                selectedPaymentMethod?.id === method.id && styles.selectedItem,
+              ]}
+            />
+          ))}
+          <Button
+            mode="text"
+            onPress={() => navigation.navigate('PaymentMethodList')}
+            style={styles.addButton}
+          >
+            支払い方法を管理
+          </Button>
+        </List.Accordion>
         
-        <Divider style={styles.divider} />
+        {/* 頻度設定アコーディオン */}
+        <List.Accordion
+          title={`頻度: ${getFrequencyLabel()}`}
+          left={props => <List.Icon {...props} icon="calendar-sync" />}
+          expanded={showFrequencySection}
+          onPress={toggleFrequencySection}
+          style={styles.accordion}
+        >
+          {renderFrequencySection()}
+        </List.Accordion>
+        
+        {/* 開始日と終了日 */}
+        <Button
+          mode="outlined"
+          onPress={() => setShowStartDatePicker(true)}
+          style={styles.input}
+        >
+          開始日: {formatDateJP(startDate)}
+        </Button>
+        
+        <View style={styles.switchContainer}>
+          <Text>終了日を設定する</Text>
+          <Switch
+            value={hasEndDate}
+            onValueChange={setHasEndDate}
+            color={theme.colors.primary}
+          />
+        </View>
+        
+        {hasEndDate && (
+          <Button
+            mode="outlined"
+            onPress={() => setShowEndDatePicker(true)}
+            style={styles.input}
+          >
+            終了日: {formatDateJP(endDate)}
+          </Button>
+        )}
         
         {/* ステータスセクション */}
-        <Text variant="titleMedium" style={styles.sectionTitle}>ステータス</Text>
+        <Text variant="titleMedium" style={[styles.label, {marginTop: 16}]}>ステータス</Text>
         
         <RadioButton.Group
           value={status}
@@ -597,7 +742,13 @@ const RecurringTransactionFormScreen = () => {
           </View>
         </RadioButton.Group>
         
-        {/* シミュレーションボタン */}
+        {error && (
+          <HelperText type="error" visible={!!error}>
+            {error}
+          </HelperText>
+        )}
+        
+        {/* アクションボタン */}
         <Button
           mode="outlined"
           onPress={runSimulation}
@@ -607,7 +758,6 @@ const RecurringTransactionFormScreen = () => {
           予定日をシミュレーション
         </Button>
         
-        {/* 保存ボタン */}
         <Button
           mode="contained"
           onPress={handleSubmit}
@@ -686,44 +836,52 @@ const RecurringTransactionFormScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: '#f5f5f5',
   },
   content: {
     padding: 16,
   },
-  sectionTitle: {
-    fontWeight: 'bold',
-    marginVertical: 12,
-  },
-  label: {
-    fontSize: 16,
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  input: {
-    marginBottom: 12,
-  },
   segmentedButtons: {
     marginBottom: 16,
   },
-  datePickerButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#cccccc',
-    borderRadius: 4,
-    padding: 8,
+  label: {
+    marginBottom: 8,
+  },
+  input: {
     marginBottom: 16,
+  },
+  accordion: {
+    backgroundColor: '#fff',
+    marginBottom: 16,
+    borderRadius: 4,
+  },
+  categoryItem: {
+    borderRadius: 4,
+    marginBottom: 2,
+  },
+  paymentMethodItem: {
+    borderRadius: 4,
+    marginBottom: 2,
+  },
+  accountItem: {
+    borderRadius: 4,
+    marginBottom: 2,
+  },
+  selectedItem: {
+    backgroundColor: '#e8e8e8',
+  },
+  addButton: {
+    marginVertical: 8,
+  },
+  actionButton: {
+    marginTop: 16,
+    marginBottom: 8,
   },
   switchContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
-  },
-  divider: {
-    marginVertical: 16,
   },
   radioItem: {
     flexDirection: 'row',
@@ -738,26 +896,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '25%',
-  },
-  categorySelector: {
-    maxHeight: 60,
-  },
-  categoryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  horizontalSelector: {
-    maxHeight: 60,
-  },
-  selectorItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  actionButton: {
-    marginTop: 16,
-    marginBottom: 8,
   },
   modalContainer: {
     backgroundColor: 'white',

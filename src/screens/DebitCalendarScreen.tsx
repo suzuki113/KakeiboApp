@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
-import { Text, Card, Button, FAB, IconButton, TextInput, useTheme, Menu, Divider } from 'react-native-paper';
+import { Text, Card, Button, IconButton, useTheme, Menu, Divider } from 'react-native-paper';
 import { Calendar, DateData } from 'react-native-calendars';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -85,25 +85,12 @@ export const DebitCalendarScreen = () => {
   const [debitSchedules, setDebitSchedules] = useState<DebitSchedule[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [combinedDebitItems, setCombinedDebitItems] = useState<CombinedDebitItem[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  
-  // 新しい引き落とし予定のための状態
-  const [newDebit, setNewDebit] = useState({
-    amount: '',
-    description: '',
-    paymentMethodId: '',
-    accountId: '',
-    date: selectedDate
-  });
-  const [showPaymentMethodMenu, setShowPaymentMethodMenu] = useState(false);
-  const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [autoDebitSchedules, setAutoDebitSchedules] = useState<AutoDebitSchedules | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string>('');
 
   // 日付選択ハンドラー
   const onDayPress = (day: DateData) => {
     setSelectedDate(day.dateString);
-    setNewDebit(prev => ({ ...prev, date: day.dateString }));
   };
 
   // データ読み込み
@@ -330,76 +317,6 @@ export const DebitCalendarScreen = () => {
     setMarkedDates(marked);
   };
 
-  // 新しい引き落とし予定を追加
-  const addDebitSchedule = async () => {
-    if (!newDebit.amount || !newDebit.description || !newDebit.paymentMethodId || !newDebit.accountId) {
-      Alert.alert('入力エラー', '全ての項目を入力してください');
-      return;
-    }
-    
-    try {
-      const amount = parseFloat(newDebit.amount);
-      if (isNaN(amount) || amount <= 0) {
-        Alert.alert('入力エラー', '有効な金額を入力してください');
-        return;
-      }
-      
-      // 新しい引き落とし予定を作成
-      const newSchedule: DebitSchedule = {
-        id: Date.now().toString(),
-        date: newDebit.date,
-        amount,
-        description: newDebit.description,
-        paymentMethodId: newDebit.paymentMethodId,
-        accountId: newDebit.accountId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      // 既存の引き落とし予定と結合
-      const updatedSchedules = [...debitSchedules, newSchedule];
-      
-      // AsyncStorageに保存
-      await AsyncStorage.setItem('debitSchedules', JSON.stringify(updatedSchedules));
-      
-      // 状態を更新
-      setDebitSchedules(updatedSchedules);
-      
-      // 新しいCombinedDebitItemを作成
-      const newCombinedItem: CombinedDebitItem = {
-        id: newSchedule.id,
-        date: newSchedule.date,
-        amount: newSchedule.amount,
-        description: newSchedule.description,
-        paymentMethodId: newSchedule.paymentMethodId,
-        accountId: newSchedule.accountId,
-        source: 'manual'
-      };
-      
-      // 統合リストを更新
-      const updatedCombinedItems = [...combinedDebitItems, newCombinedItem];
-      setCombinedDebitItems(updatedCombinedItems);
-      
-      // マーカー付きの日付を更新
-      updateMarkedDates(updatedCombinedItems);
-      
-      // フォームをリセット
-      setNewDebit({
-        amount: '',
-        description: '',
-        paymentMethodId: '',
-        accountId: '',
-        date: selectedDate
-      });
-      setShowForm(false);
-      
-      Alert.alert('成功', '引き落とし予定を追加しました');
-    } catch (error) {
-      console.error('引き落とし予定の追加エラー:', error);
-      Alert.alert('エラー', '引き落とし予定の追加に失敗しました');
-    }
-  };
-
   // 引き落とし予定を削除
   const deleteDebitSchedule = async (id: string) => {
     try {
@@ -596,6 +513,7 @@ export const DebitCalendarScreen = () => {
           <Text style={styles.sectionTitle}>
             引き落としカレンダー
           </Text>
+          
           <Button
             mode="contained"
             icon="refresh"
@@ -626,117 +544,11 @@ export const DebitCalendarScreen = () => {
           {renderSelectedDateSchedules()}
         </View>
         
-        {showForm && (
-          <Card style={styles.formCard}>
-            <Card.Title title="新しい引き落とし予定" />
-            <Card.Content>
-              <TextInput
-                label="金額"
-                value={newDebit.amount}
-                onChangeText={(text) => setNewDebit(prev => ({ ...prev, amount: text }))}
-                keyboardType="numeric"
-                style={styles.input}
-              />
-              
-              <TextInput
-                label="説明"
-                value={newDebit.description}
-                onChangeText={(text) => setNewDebit(prev => ({ ...prev, description: text }))}
-                style={styles.input}
-              />
-              
-              <View style={styles.menuContainer}>
-                <Text style={styles.menuLabel}>支払い方法:</Text>
-                <Menu
-                  visible={showPaymentMethodMenu}
-                  onDismiss={() => setShowPaymentMethodMenu(false)}
-                  anchor={
-                    <Button
-                      mode="outlined"
-                      onPress={() => setShowPaymentMethodMenu(true)}
-                      style={styles.menuButton}
-                    >
-                      {newDebit.paymentMethodId
-                        ? paymentMethods.find(p => p.id === newDebit.paymentMethodId)?.name || '選択'
-                        : '選択してください'}
-                    </Button>
-                  }
-                >
-                  {paymentMethods.map(method => (
-                    <Menu.Item
-                      key={method.id}
-                      onPress={() => {
-                        setNewDebit(prev => ({ ...prev, paymentMethodId: method.id }));
-                        setShowPaymentMethodMenu(false);
-                      }}
-                      title={method.name}
-                    />
-                  ))}
-                </Menu>
-              </View>
-              
-              <View style={styles.menuContainer}>
-                <Text style={styles.menuLabel}>引き落とし口座:</Text>
-                <Menu
-                  visible={showAccountMenu}
-                  onDismiss={() => setShowAccountMenu(false)}
-                  anchor={
-                    <Button
-                      mode="outlined"
-                      onPress={() => setShowAccountMenu(true)}
-                      style={styles.menuButton}
-                    >
-                      {newDebit.accountId
-                        ? accounts.find(a => a.id === newDebit.accountId)?.name || '選択'
-                        : '選択してください'}
-                    </Button>
-                  }
-                >
-                  {accounts.map(account => (
-                    <Menu.Item
-                      key={account.id}
-                      onPress={() => {
-                        setNewDebit(prev => ({ ...prev, accountId: account.id }));
-                        setShowAccountMenu(false);
-                      }}
-                      title={account.name}
-                    />
-                  ))}
-                </Menu>
-              </View>
-              
-              <View style={styles.formButtons}>
-                <Button
-                  mode="outlined"
-                  onPress={() => setShowForm(false)}
-                  style={styles.cancelButton}
-                >
-                  キャンセル
-                </Button>
-                
-                <Button
-                  mode="contained"
-                  onPress={addDebitSchedule}
-                  style={styles.saveButton}
-                >
-                  保存
-                </Button>
-              </View>
-            </Card.Content>
-          </Card>
-        )}
-        
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>月間引き落とし予定</Text>
           {renderMonthlySchedules()}
         </View>
       </ScrollView>
-      
-      <FAB
-        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
-        icon="plus"
-        onPress={() => setShowForm(true)}
-      />
     </View>
   );
 };
