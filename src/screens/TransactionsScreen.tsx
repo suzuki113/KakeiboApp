@@ -528,7 +528,8 @@ const getPaymentMethodIcon = (type: string): string => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.white,
+    padding: 12,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -566,7 +567,10 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: 8,
     borderRadius: 12,
-    elevation: 2,
+    elevation: 0,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.lightBlue,
   },
   cardHeader: {
     flexDirection: 'row',

@@ -4,6 +4,7 @@ import { List, Divider, Card, useTheme, IconButton, Text } from 'react-native-pa
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { COLORS } from '../theme/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -103,12 +104,16 @@ export const SettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.white,
     padding: 12,
   },
   card: {
     marginBottom: 16,
     borderRadius: 12,
+    elevation: 0,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.lightBlue,
   },
   sectionTitle: {
     marginBottom: 16,

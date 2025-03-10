@@ -184,206 +184,212 @@ export const HomeScreen = () => {
   // 総資産のセクション
   const renderTotalAssets = () => {
     return (
-      <Card style={styles.card}>
-        <Card.Content style={styles.cardContent}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <IconButton
-                icon="wallet"
-                size={24}
-                iconColor={theme.colors.primary}
-                style={styles.sectionIcon}
-              />
-              <Text variant="titleMedium">総資産</Text>
+      <View style={styles.section}>
+        <Card style={styles.card}>
+          <Card.Content style={styles.cardContent}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleContainer}>
+                <IconButton
+                  icon="wallet"
+                  size={24}
+                  iconColor={theme.colors.primary}
+                  style={styles.sectionIcon}
+                />
+                <Text variant="titleMedium">総資産</Text>
+              </View>
             </View>
-          </View>
-          <Text variant="headlineMedium" style={styles.totalBalanceText}>
-            ¥{balances.totalBalance.toLocaleString()}
-          </Text>
-          <View style={styles.assetDetailsContainer}>
-            <View style={styles.operatingAssetsContainer}>
-              <Text variant="bodyMedium" style={styles.operatingAssetsLabel}>運用中資産</Text>
-              <Text variant="titleLarge" style={styles.operatingAssetsText}>
-                ¥{balances.accountBalances.investment.toLocaleString()}
-              </Text>
+            <Text variant="headlineMedium" style={styles.totalBalanceText}>
+              ¥{balances.totalBalance.toLocaleString()}
+            </Text>
+            <View style={styles.assetDetailsContainer}>
+              <View style={styles.operatingAssetsContainer}>
+                <Text variant="bodyMedium" style={styles.operatingAssetsLabel}>運用中資産</Text>
+                <Text variant="titleLarge" style={styles.operatingAssetsText}>
+                  ¥{balances.accountBalances.investment.toLocaleString()}
+                </Text>
+              </View>
             </View>
-          </View>
-        </Card.Content>
-      </Card>
+          </Card.Content>
+        </Card>
+      </View>
     );
   };
 
   // 口座残高のセクション
   const renderAccountsSection = () => {
     return (
-      <Card style={styles.card}>
-        <Card.Content style={styles.cardContent}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <IconButton
-                icon="bank"
-                size={24}
-                iconColor={theme.colors.primary}
-                style={styles.sectionIcon}
-              />
-              <Text variant="titleMedium">口座残高</Text>
+      <View style={styles.section}>
+        <Card style={styles.card}>
+          <Card.Content style={styles.cardContent}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleContainer}>
+                <IconButton
+                  icon="bank"
+                  size={24}
+                  iconColor={theme.colors.primary}
+                  style={styles.sectionIcon}
+                />
+                <Text variant="titleMedium">口座残高</Text>
+              </View>
+              <Button
+                mode="text"
+                compact
+                onPress={() => navigation.navigate('AccountList')}
+                style={styles.managementButton}
+              >
+                管理
+              </Button>
             </View>
-            <Button
-              mode="text"
-              compact
-              onPress={() => navigation.navigate('AccountList')}
-              style={styles.managementButton}
-            >
-              管理
-            </Button>
-          </View>
-          
-          {accounts.length === 0 ? (
-            <Text style={styles.emptyText}>口座がありません</Text>
-          ) : (
-            <View style={styles.accountsList}>
-              {accounts.map(account => (
-                <View key={account.id} style={styles.accountItem}>
-                  <View style={styles.accountInfo}>
-                    <Text variant="bodyMedium">{account.name}</Text>
+            
+            {accounts.length === 0 ? (
+              <Text style={styles.emptyText}>口座がありません</Text>
+            ) : (
+              <View style={styles.accountsList}>
+                {accounts.map(account => (
+                  <View key={account.id} style={styles.accountItem}>
+                    <View style={styles.accountInfo}>
+                      <Text variant="bodyMedium">{account.name}</Text>
+                    </View>
+                    <Text
+                      variant="bodyLarge"
+                      style={{
+                        color: account.balance >= 0 ? theme.colors.primary : theme.colors.error,
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      ¥{account.balance.toLocaleString()}
+                    </Text>
                   </View>
-                  <Text
-                    variant="bodyLarge"
-                    style={{
-                      color: account.balance >= 0 ? theme.colors.primary : theme.colors.error,
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    ¥{account.balance.toLocaleString()}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </Card.Content>
-      </Card>
+                ))}
+              </View>
+            )}
+          </Card.Content>
+        </Card>
+      </View>
     );
   };
 
   // 月間統計のセクション
   const renderMonthlyStatsSection = () => {
     return (
-      <Card style={styles.card}>
-        <Card.Content style={styles.cardContent}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <IconButton
-                icon="chart-pie"
-                size={24}
-                iconColor={theme.colors.primary}
-                style={styles.sectionIcon}
-              />
-              <Text variant="titleMedium">
-                {monthlyStats.year}年{monthlyStats.month}月の統計
-              </Text>
+      <View style={styles.section}>
+        <Card style={styles.card}>
+          <Card.Content style={styles.cardContent}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleContainer}>
+                <IconButton
+                  icon="chart-pie"
+                  size={24}
+                  iconColor={theme.colors.primary}
+                  style={styles.sectionIcon}
+                />
+                <Text variant="titleMedium">
+                  {monthlyStats.year}年{monthlyStats.month}月の統計
+                </Text>
+              </View>
             </View>
-          </View>
-          
-          <View style={styles.statsSelector}>
-            <Button
-              mode={activeGraph === 'category' ? 'contained' : 'outlined'}
-              compact
-              onPress={() => setActiveGraph('category')}
-              style={styles.graphButton}
-            >
-              カテゴリ
-            </Button>
-            <Button
-              mode={activeGraph === 'paymentMethod' ? 'contained' : 'outlined'}
-              compact
-              onPress={() => setActiveGraph('paymentMethod')}
-              style={styles.graphButton}
-            >
-              支払い方法
-            </Button>
-          </View>
-          
-          <View style={styles.statsOverview}>
-            <View style={styles.statsItem}>
-              <Text variant="labelLarge" style={styles.statsLabel}>収入</Text>
-              <Text variant="titleLarge" style={[styles.statsAmount, styles.incomeAmount]}>
-                ¥{monthlyStats.totalIncome.toLocaleString()}
-              </Text>
+            
+            <View style={styles.statsSelector}>
+              <Button
+                mode={activeGraph === 'category' ? 'contained' : 'outlined'}
+                compact
+                onPress={() => setActiveGraph('category')}
+                style={styles.graphButton}
+              >
+                カテゴリ
+              </Button>
+              <Button
+                mode={activeGraph === 'paymentMethod' ? 'contained' : 'outlined'}
+                compact
+                onPress={() => setActiveGraph('paymentMethod')}
+                style={styles.graphButton}
+              >
+                支払い方法
+              </Button>
             </View>
-            <View style={styles.statsItem}>
-              <Text variant="labelLarge" style={styles.statsLabel}>支出</Text>
-              <Text variant="titleLarge" style={[styles.statsAmount, styles.expenseAmount]}>
-                ¥{monthlyStats.totalExpenses.toLocaleString()}
-              </Text>
+            
+            <View style={styles.statsOverview}>
+              <View style={styles.statsItem}>
+                <Text variant="labelLarge" style={styles.statsLabel}>収入</Text>
+                <Text variant="titleLarge" style={[styles.statsAmount, styles.incomeAmount]}>
+                  ¥{monthlyStats.totalIncome.toLocaleString()}
+                </Text>
+              </View>
+              <View style={styles.statsItem}>
+                <Text variant="labelLarge" style={styles.statsLabel}>支出</Text>
+                <Text variant="titleLarge" style={[styles.statsAmount, styles.expenseAmount]}>
+                  ¥{monthlyStats.totalExpenses.toLocaleString()}
+                </Text>
+              </View>
             </View>
-          </View>
-          
-          {/* 円グラフの表示 */}
-          {activeGraph === 'category' ? (
-            <>
-              <Text variant="titleSmall" style={styles.chartTitle}>支出カテゴリ</Text>
-              {monthlyStats.expenseData.length > 0 ? (
-                <View style={styles.chartContainer}>
-                  <PieChart
-                    data={monthlyStats.expenseData.map(item => ({
-                      value: parseFloat(item.percentage.toFixed(1)),
-                      color: item.color,
-                      name: item.name,
-                    }))}
-                    radius={chartWidth / 4}
-                    textColor="black"
-                    textSize={12}
-                    showText
-                    showValuesAsLabels
-                    textBackgroundRadius={18}
-                    focusOnPress
-                    centerLabelComponent={() => (
-                      <View style={styles.centerLabel}>
-                        <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
-                          ¥{monthlyStats.totalExpenses.toLocaleString()}
-                        </Text>
-                      </View>
-                    )}
-                  />
-                </View>
-              ) : (
-                <Text style={styles.emptyText}>データがありません</Text>
-              )}
-            </>
-          ) : (
-            <>
-              <Text variant="titleSmall" style={styles.chartTitle}>支払い方法</Text>
-              {paymentMethodStats.paymentMethodData.length > 0 ? (
-                <View style={styles.chartContainer}>
-                  <PieChart
-                    data={paymentMethodStats.paymentMethodData.map(item => ({
-                      value: parseFloat(item.percentage.toFixed(1)),
-                      color: item.color,
-                      name: item.name,
-                    }))}
-                    radius={chartWidth / 4}
-                    textColor="black"
-                    textSize={12}
-                    showText
-                    showValuesAsLabels
-                    textBackgroundRadius={18}
-                    focusOnPress
-                    centerLabelComponent={() => (
-                      <View style={styles.centerLabel}>
-                        <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
-                          ¥{paymentMethodStats.totalExpenses.toLocaleString()}
-                        </Text>
-                      </View>
-                    )}
-                  />
-                </View>
-              ) : (
-                <Text style={styles.emptyText}>データがありません</Text>
-              )}
-            </>
-          )}
-        </Card.Content>
-      </Card>
+            
+            {/* 円グラフの表示 */}
+            {activeGraph === 'category' ? (
+              <>
+                <Text variant="titleSmall" style={styles.chartTitle}>支出カテゴリ</Text>
+                {monthlyStats.expenseData.length > 0 ? (
+                  <View style={styles.chartContainer}>
+                    <PieChart
+                      data={monthlyStats.expenseData.map(item => ({
+                        value: parseFloat(item.percentage.toFixed(1)),
+                        color: item.color,
+                        name: item.name,
+                      }))}
+                      radius={chartWidth / 4}
+                      textColor="black"
+                      textSize={12}
+                      showText
+                      showValuesAsLabels
+                      textBackgroundRadius={18}
+                      focusOnPress
+                      centerLabelComponent={() => (
+                        <View style={styles.centerLabel}>
+                          <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
+                            ¥{monthlyStats.totalExpenses.toLocaleString()}
+                          </Text>
+                        </View>
+                      )}
+                    />
+                  </View>
+                ) : (
+                  <Text style={styles.emptyText}>データがありません</Text>
+                )}
+              </>
+            ) : (
+              <>
+                <Text variant="titleSmall" style={styles.chartTitle}>支払い方法</Text>
+                {paymentMethodStats.paymentMethodData.length > 0 ? (
+                  <View style={styles.chartContainer}>
+                    <PieChart
+                      data={paymentMethodStats.paymentMethodData.map(item => ({
+                        value: parseFloat(item.percentage.toFixed(1)),
+                        color: item.color,
+                        name: item.name,
+                      }))}
+                      radius={chartWidth / 4}
+                      textColor="black"
+                      textSize={12}
+                      showText
+                      showValuesAsLabels
+                      textBackgroundRadius={18}
+                      focusOnPress
+                      centerLabelComponent={() => (
+                        <View style={styles.centerLabel}>
+                          <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
+                            ¥{paymentMethodStats.totalExpenses.toLocaleString()}
+                          </Text>
+                        </View>
+                      )}
+                    />
+                  </View>
+                ) : (
+                  <Text style={styles.emptyText}>データがありません</Text>
+                )}
+              </>
+            )}
+          </Card.Content>
+        </Card>
+      </View>
     );
   };
 
@@ -397,85 +403,87 @@ export const HomeScreen = () => {
     }
 
     return (
-      <Card style={styles.card}>
-        <Card.Content style={styles.cardContent}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <IconButton
-                icon="calendar-check"
-                size={24}
-                iconColor={theme.colors.primary}
-                style={styles.sectionIcon}
-              />
-              <Text variant="titleMedium">引き落とし予定</Text>
+      <View style={styles.section}>
+        <Card style={styles.card}>
+          <Card.Content style={styles.cardContent}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleContainer}>
+                <IconButton
+                  icon="calendar-check"
+                  size={24}
+                  iconColor={theme.colors.primary}
+                  style={styles.sectionIcon}
+                />
+                <Text variant="titleMedium">引き落とし予定</Text>
+              </View>
             </View>
-          </View>
-          
-          {hasCurrentMonthPayments && (
-            <View style={styles.settlementSection}>
-              <Text variant="titleSmall" style={styles.settlementTitle}>
-                今月の引き落とし (¥{upcomingSettlements.totalCurrentMonth.toLocaleString()})
-              </Text>
-              {upcomingSettlements.currentMonthPayments.map(payment => (
-                <View key={payment.id} style={styles.settlementItem}>
-                  <View style={styles.settlementInfo}>
-                    <IconButton
-                      icon={payment.type === 'credit_card' ? 'credit-card' : 'bank-transfer'}
-                      size={20}
-                      iconColor={theme.colors.primary}
-                      style={styles.iconButton}
-                    />
-                    <View>
-                      <Text variant="bodyMedium">{payment.name}</Text>
-                      <Text variant="bodySmall" style={styles.settlementDate}>
-                        {getJapaneseMonth(payment.billingDate)} {payment.billingDay}日
-                      </Text>
+            
+            {hasCurrentMonthPayments && (
+              <View style={styles.settlementSection}>
+                <Text variant="titleSmall" style={styles.settlementTitle}>
+                  今月の引き落とし (¥{upcomingSettlements.totalCurrentMonth.toLocaleString()})
+                </Text>
+                {upcomingSettlements.currentMonthPayments.map(payment => (
+                  <View key={payment.id} style={styles.settlementItem}>
+                    <View style={styles.settlementInfo}>
+                      <IconButton
+                        icon={payment.type === 'credit_card' ? 'credit-card' : 'bank-transfer'}
+                        size={20}
+                        iconColor={theme.colors.primary}
+                        style={styles.iconButton}
+                      />
+                      <View>
+                        <Text variant="bodyMedium">{payment.name}</Text>
+                        <Text variant="bodySmall" style={styles.settlementDate}>
+                          {getJapaneseMonth(payment.billingDate)} {payment.billingDay}日
+                        </Text>
+                      </View>
                     </View>
+                    <Text
+                      variant="bodyLarge"
+                      style={styles.settlementAmount}
+                    >
+                      ¥{payment.amount.toLocaleString()}
+                    </Text>
                   </View>
-                  <Text
-                    variant="bodyLarge"
-                    style={styles.settlementAmount}
-                  >
-                    ¥{payment.amount.toLocaleString()}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-          
-          {hasNextMonthPayments && (
-            <View style={styles.settlementSection}>
-              <Text variant="titleSmall" style={styles.settlementTitle}>
-                来月の引き落とし (¥{upcomingSettlements.totalNextMonth.toLocaleString()})
-              </Text>
-              {upcomingSettlements.nextMonthPayments.map(payment => (
-                <View key={payment.id} style={styles.settlementItem}>
-                  <View style={styles.settlementInfo}>
-                    <IconButton
-                      icon={payment.type === 'credit_card' ? 'credit-card' : 'bank-transfer'}
-                      size={20}
-                      iconColor={theme.colors.primary}
-                      style={styles.iconButton}
-                    />
-                    <View>
-                      <Text variant="bodyMedium">{payment.name}</Text>
-                      <Text variant="bodySmall" style={styles.settlementDate}>
-                        {getJapaneseMonth(payment.billingDate)} {payment.billingDay}日
-                      </Text>
+                ))}
+              </View>
+            )}
+            
+            {hasNextMonthPayments && (
+              <View style={styles.settlementSection}>
+                <Text variant="titleSmall" style={styles.settlementTitle}>
+                  来月の引き落とし (¥{upcomingSettlements.totalNextMonth.toLocaleString()})
+                </Text>
+                {upcomingSettlements.nextMonthPayments.map(payment => (
+                  <View key={payment.id} style={styles.settlementItem}>
+                    <View style={styles.settlementInfo}>
+                      <IconButton
+                        icon={payment.type === 'credit_card' ? 'credit-card' : 'bank-transfer'}
+                        size={20}
+                        iconColor={theme.colors.primary}
+                        style={styles.iconButton}
+                      />
+                      <View>
+                        <Text variant="bodyMedium">{payment.name}</Text>
+                        <Text variant="bodySmall" style={styles.settlementDate}>
+                          {getJapaneseMonth(payment.billingDate)} {payment.billingDay}日
+                        </Text>
+                      </View>
                     </View>
+                    <Text
+                      variant="bodyLarge"
+                      style={styles.settlementAmount}
+                    >
+                      ¥{payment.amount.toLocaleString()}
+                    </Text>
                   </View>
-                  <Text
-                    variant="bodyLarge"
-                    style={styles.settlementAmount}
-                  >
-                    ¥{payment.amount.toLocaleString()}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </Card.Content>
-      </Card>
+                ))}
+              </View>
+            )}
+          </Card.Content>
+        </Card>
+      </View>
     );
   };
 
@@ -513,16 +521,22 @@ const getAccountColor = (type: string): string => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.white,
     padding: 12,
   },
-  card: {
+  section: {
     marginBottom: 16,
+  },
+  card: {
     borderRadius: 12,
-    elevation: 2,
+    elevation: 0,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.lightBlue,
   },
   cardContent: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
