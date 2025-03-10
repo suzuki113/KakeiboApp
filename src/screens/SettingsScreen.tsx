@@ -15,34 +15,6 @@ export const SettingsScreen = () => {
     <ScrollView style={styles.container}>
       <Card style={styles.card}>
         <Card.Content>
-          <Text variant="titleMedium" style={styles.sectionTitle}>アカウント設定</Text>
-          
-          <View style={styles.menuItem}>
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.iconContainer, { backgroundColor: theme.colors.primaryContainer }]}>
-                <IconButton icon="account" iconColor={theme.colors.primary} size={24} />
-              </View>
-              <Text variant="bodyLarge">プロフィール</Text>
-            </View>
-            <IconButton icon="chevron-right" size={24} iconColor={theme.colors.outline} />
-          </View>
-          
-          <Divider style={styles.divider} />
-          
-          <View style={styles.menuItem}>
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.iconContainer, { backgroundColor: theme.colors.primaryContainer }]}>
-                <IconButton icon="bell" iconColor={theme.colors.primary} size={24} />
-              </View>
-              <Text variant="bodyLarge">通知</Text>
-            </View>
-            <IconButton icon="chevron-right" size={24} iconColor={theme.colors.outline} />
-          </View>
-        </Card.Content>
-      </Card>
-
-      <Card style={styles.card}>
-        <Card.Content>
           <Text variant="titleMedium" style={styles.sectionTitle}>データ管理</Text>
           
           <View style={styles.menuItem}>
@@ -121,34 +93,6 @@ export const SettingsScreen = () => {
               iconColor={theme.colors.outline}
               onPress={() => navigation.navigate('InvestmentItemList')}
             />
-          </View>
-        </Card.Content>
-      </Card>
-
-      <Card style={styles.card}>
-        <Card.Content>
-          <Text variant="titleMedium" style={styles.sectionTitle}>その他</Text>
-          
-          <View style={styles.menuItem}>
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.iconContainer, { backgroundColor: theme.colors.primaryContainer }]}>
-                <IconButton icon="information" iconColor={theme.colors.primary} size={24} />
-              </View>
-              <Text variant="bodyLarge">アプリについて</Text>
-            </View>
-            <IconButton icon="chevron-right" size={24} iconColor={theme.colors.outline} />
-          </View>
-          
-          <Divider style={styles.divider} />
-          
-          <View style={styles.menuItem}>
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.iconContainer, { backgroundColor: theme.colors.primaryContainer }]}>
-                <IconButton icon="help-circle" iconColor={theme.colors.primary} size={24} />
-              </View>
-              <Text variant="bodyLarge">ヘルプ</Text>
-            </View>
-            <IconButton icon="chevron-right" size={24} iconColor={theme.colors.outline} />
           </View>
         </Card.Content>
       </Card>

@@ -288,18 +288,6 @@ export const HomeScreen = () => {
                 ¥{monthlyStats.totalExpenses.toLocaleString()}
               </Text>
             </View>
-            <View style={styles.statsItem}>
-              <Text variant="labelLarge" style={styles.statsLabel}>収支</Text>
-              <Text 
-                variant="titleLarge" 
-                style={[
-                  styles.statsAmount, 
-                  monthlyStats.balance >= 0 ? styles.positiveBalance : styles.negativeBalance
-                ]}
-              >
-                ¥{monthlyStats.balance.toLocaleString()}
-              </Text>
-            </View>
           </View>
           
           {/* 円グラフの表示 */}
@@ -310,7 +298,7 @@ export const HomeScreen = () => {
                 <View style={styles.chartContainer}>
                   <PieChart
                     data={monthlyStats.expenseData.map(item => ({
-                      value: item.percentage,
+                      value: parseFloat(item.percentage.toFixed(1)),
                       color: item.color,
                       name: item.name,
                     }))}
@@ -341,7 +329,7 @@ export const HomeScreen = () => {
                 <View style={styles.chartContainer}>
                   <PieChart
                     data={paymentMethodStats.paymentMethodData.map(item => ({
-                      value: item.percentage,
+                      value: parseFloat(item.percentage.toFixed(1)),
                       color: item.color,
                       name: item.name,
                     }))}
@@ -642,12 +630,6 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
   },
   expenseAmount: {
-    color: '#F44336',
-  },
-  positiveBalance: {
-    color: '#4CAF50',
-  },
-  negativeBalance: {
     color: '#F44336',
   },
   chartTitle: {
