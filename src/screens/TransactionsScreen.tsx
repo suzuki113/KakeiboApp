@@ -264,38 +264,51 @@ export const TransactionsScreen = () => {
     }
   };
 
-  // トランザクションカード表示関数の型を修正
+  // トランザクションカードをレンダリングする関数
   const renderTransactionCard = (transaction: Transaction) => {
     const category = getCategoryById(transaction.categoryId);
     const paymentMethod = getPaymentMethodById(transaction.paymentMethodId);
     const account = getAccountById(transaction.accountId);
-    
-    // 取引ステータスに応じてカードの背景色を変える
-    let cardStyle = styles.transactionCard;
-    let statusIcon = null;
-    let statusIconColor = theme.colors.primary;
+    const typeInfo = getTransactionTypeIconAndColor(transaction.type);
+
+    // 状態アイコンの計算
+    let statusIcon = undefined;
+    let statusIconColor = undefined;
     
     if (transaction.status === 'pending_settlement') {
-      cardStyle = {...styles.transactionCard, ...styles.pendingCard};
-      statusIcon = "clock-time-four-outline"; // 時計アイコン（保留中を示す）
-      statusIconColor = '#ff9800'; // オレンジ
+      statusIcon = 'clock-outline';
+      statusIconColor = '#FFA000'; // オレンジ色（警告色）
     } else if (transaction.status === 'settlement') {
-      cardStyle = {...styles.transactionCard, ...styles.settlementCard};
-      statusIcon = "bank-transfer"; // 銀行振替アイコン（引き落としを示す）
-      statusIconColor = '#4caf50'; // 緑
+      statusIcon = 'bank-transfer';
+      statusIconColor = '#4CAF50'; // 緑色（成功色）
     }
+
+    // キャプションに表示される情報を構築
+    const transferAccounts = getTransferAccounts(transaction);
     
     return (
-      <Card key={transaction.id} style={cardStyle}>
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('AddTransaction', { transaction })}
-          style={styles.cardTouchable}
+      <Card style={styles.card} key={transaction.id}>
+        <TouchableOpacity
+          onPress={() => handleEdit(transaction)}
+          style={{ flex: 1 }}
         >
           <Card.Content>
-            <View style={styles.transactionHeader}>
-              <View style={styles.dateTimeContainer}>
-                <Text variant="bodySmall">{formatDate(transaction.date)}</Text>
-                <Text variant="bodySmall">{formatTime(transaction.date)}</Text>
+            <View style={styles.cardHeader}>
+              <View style={styles.leftSection}>
+                <View style={[styles.typeIconContainer, { backgroundColor: typeInfo.color }]}>
+                  <IconButton
+                    icon={typeInfo.icon}
+                    iconColor="#fff"
+                    size={18}
+                    style={styles.typeIcon}
+                  />
+                </View>
+                
+                <View style={styles.timeInfoContainer}>
+                  <Text variant="labelMedium" style={styles.time}>
+                    {formatTime(transaction.date)}
+                  </Text>
+                </View>
               </View>
               
               <View style={styles.rightSection}>
@@ -313,16 +326,16 @@ export const TransactionsScreen = () => {
                   ¥{transaction.amount.toLocaleString()}
                 </Text>
                 
+                <IconButton
+                  icon="dots-vertical"
+                  size={20}
+                  onPress={() => toggleMenu(transaction.id)}
+                />
+                
                 <Menu
                   visible={menuVisible[transaction.id] || false}
                   onDismiss={() => toggleMenu(transaction.id)}
-                  anchor={
-                    <IconButton
-                      icon="dots-vertical"
-                      size={20}
-                      onPress={() => toggleMenu(transaction.id)}
-                    />
-                  }
+                  anchor={<View />}
                 >
                   <Menu.Item 
                     onPress={() => {
@@ -359,47 +372,41 @@ export const TransactionsScreen = () => {
               )}
             </View>
             
-            <View style={styles.tagsContainer}>
+            <View style={styles.iconsContainer}>
               {category && transaction.type !== 'transfer' && (
-                <Chip 
-                  mode="outlined" 
-                  style={[styles.categoryChip, { borderColor: category.color }]}
-                  textStyle={{ color: category.color }}
-                  compact
-                >
-                  {category.name}
-                </Chip>
+                <View style={[styles.infoIconContainer, { borderColor: category.color }]}>
+                  <Text style={[styles.infoIconText, { color: category.color }]}>
+                    {category.name}
+                  </Text>
+                </View>
               )}
+              
               {paymentMethod && transaction.type !== 'transfer' && (
-                <Chip 
-                  mode="outlined" 
-                  style={styles.paymentMethodChip}
-                  compact
+                <IconButton
                   icon={getPaymentMethodIcon(paymentMethod.type)}
-                >
-                  {paymentMethod.name}
-                </Chip>
+                  size={16}
+                  style={styles.infoIcon}
+                  iconColor={theme.colors.primary}
+                />
               )}
+              
               {account && (
-                <Chip 
-                  mode="outlined" 
-                  style={styles.accountChip}
-                  compact
+                <IconButton
                   icon={getAccountIcon(account.type)}
-                >
-                  {account.name}
-                </Chip>
+                  size={16}
+                  style={styles.infoIcon}
+                  iconColor={theme.colors.primary}
+                />
               )}
+              
               {transaction.relatedTransactionId && (
-                <Chip 
-                  mode="outlined" 
-                  style={styles.relatedChip}
-                  compact
+                <IconButton
                   icon="link-variant"
+                  size={16}
+                  style={styles.infoIcon}
+                  iconColor={theme.colors.primary}
                   onPress={() => navigateToRelatedTransaction(transaction.relatedTransactionId!)}
-                >
-                  関連
-                </Chip>
+                />
               )}
             </View>
           </Card.Content>
@@ -555,27 +562,42 @@ const styles = StyleSheet.create({
   dateText: {
     fontWeight: 'bold',
   },
-  transactionCard: {
-    marginHorizontal: 8,
-    marginVertical: 4,
+  card: {
+    marginBottom: 8,
+    borderRadius: 12,
     elevation: 2,
   },
-  cardTouchable: {
-    width: '100%',
-  },
-  transactionHeader: {
+  cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
-  dateTimeContainer: {
+  leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  typeIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  typeIcon: {
+    margin: 0,
+    padding: 0,
+  },
+  timeInfoContainer: {
+    marginLeft: 4,
+  },
+  time: {
+    color: '#757575',
   },
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
   },
   amount: {
     fontWeight: 'bold',
@@ -592,34 +614,36 @@ const styles = StyleSheet.create({
   descriptionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 8,
+    marginVertical: 4,
   },
   description: {
     flex: 1,
   },
   statusIcon: {
     margin: 0,
-    padding: 0,
+    width: 24,
+    height: 24,
   },
-  tagsContainer: {
+  iconsContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
     flexWrap: 'wrap',
     marginTop: 4,
   },
-  categoryChip: {
-    height: 24,
+  infoIconContainer: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
     marginRight: 8,
-    marginBottom: 4,
   },
-  paymentMethodChip: {
-    height: 24,
-    backgroundColor: '#e0e0e0',
-    marginBottom: 4,
+  infoIconText: {
+    fontSize: 12,
   },
-  accountChip: {
+  infoIcon: {
+    margin: 0,
+    width: 24,
     height: 24,
-    backgroundColor: '#e0e0e0',
-    marginBottom: 4,
   },
   fab: {
     position: 'absolute',
