@@ -15,7 +15,8 @@ import { InvestmentListScreen } from '../screens/InvestmentListScreen';
 import { InvestmentItemFormScreen } from '../screens/InvestmentItemFormScreen';
 import DebitCalendarScreen from '../screens/DebitCalendarScreen';
 import { Transaction } from '../models/types';
-import { IconButton } from 'react-native-paper';
+import { IconButton, useTheme } from 'react-native-paper';
+import { View, StyleSheet } from 'react-native';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -45,12 +46,20 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const MainTabs = () => {
+  const theme = useTheme();
+  
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#6200ee',
+        tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: '#757575',
         headerShown: true,
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          height: 60,
+          paddingBottom: 5,
+          paddingTop: 5,
+        },
       }}
     >
       <Tab.Screen
@@ -58,8 +67,11 @@ const MainTabs = () => {
         component={HomeScreen}
         options={{
           title: 'ホーム',
-          tabBarIcon: ({ color, size }) => (
-            <IconButton icon="home" size={size} iconColor={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={styles.tabIconContainer}>
+              <IconButton icon="home" size={28} iconColor={color} />
+              {focused && <View style={[styles.activeIndicator, { backgroundColor: theme.colors.primary }]} />}
+            </View>
           ),
         }}
       />
@@ -68,8 +80,11 @@ const MainTabs = () => {
         component={TransactionsScreen}
         options={{
           title: '取引履歴',
-          tabBarIcon: ({ color, size }) => (
-            <IconButton icon="format-list-bulleted" size={size} iconColor={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={styles.tabIconContainer}>
+              <IconButton icon="format-list-bulleted" size={28} iconColor={color} />
+              {focused && <View style={[styles.activeIndicator, { backgroundColor: theme.colors.primary }]} />}
+            </View>
           ),
         }}
       />
@@ -78,8 +93,11 @@ const MainTabs = () => {
         component={DebitCalendarScreen}
         options={{
           title: '引落カレンダー',
-          tabBarIcon: ({ color, size }) => (
-            <IconButton icon="calendar" size={size} iconColor={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={styles.tabIconContainer}>
+              <IconButton icon="calendar" size={28} iconColor={color} />
+              {focused && <View style={[styles.activeIndicator, { backgroundColor: theme.colors.primary }]} />}
+            </View>
           ),
         }}
       />
@@ -88,8 +106,11 @@ const MainTabs = () => {
         component={SettingsScreen}
         options={{
           title: '設定',
-          tabBarIcon: ({ color, size }) => (
-            <IconButton icon="cog" size={size} iconColor={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={styles.tabIconContainer}>
+              <IconButton icon="cog" size={28} iconColor={color} />
+              {focused && <View style={[styles.activeIndicator, { backgroundColor: theme.colors.primary }]} />}
+            </View>
           ),
         }}
       />
@@ -172,4 +193,18 @@ export const AppNavigator = () => {
       />
     </Stack.Navigator>
   );
-}; 
+};
+
+const styles = StyleSheet.create({
+  tabIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+  },
+  activeIndicator: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    marginTop: 2,
+  },
+}); 
