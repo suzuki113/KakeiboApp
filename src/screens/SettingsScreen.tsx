@@ -21,6 +21,26 @@ export const SettingsScreen = () => {
           <View style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
               <View style={[styles.iconContainer, { backgroundColor: theme.colors.primaryContainer }]}>
+                <IconButton icon="calendar-sync" iconColor={theme.colors.primary} size={24} />
+              </View>
+              <View style={styles.textContainer}>
+                <Text variant="bodyLarge">定期取引管理</Text>
+                <Text variant="bodySmall" style={{ color: theme.colors.outline }}>サブスクリプションや定期的な取引の管理</Text>
+              </View>
+            </View>
+            <IconButton 
+              icon="chevron-right" 
+              size={24} 
+              iconColor={theme.colors.outline}
+              onPress={() => navigation.navigate('RecurringTransactionList')}
+            />
+          </View>
+          
+          <Divider style={styles.divider} />
+          
+          <View style={styles.menuItem}>
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconContainer, { backgroundColor: theme.colors.primaryContainer }]}>
                 <IconButton icon="tag" iconColor={theme.colors.primary} size={24} />
               </View>
               <View style={styles.textContainer}>

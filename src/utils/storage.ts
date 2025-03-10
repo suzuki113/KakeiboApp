@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Transaction, Category, PaymentMethod, Account, InvestmentItem, TransactionStatus } from '../models/types';
+import { Transaction, Category, PaymentMethod, Account, InvestmentItem, TransactionStatus, RecurringTransaction, RecurrenceFrequency, RecurringTransactionStatus } from '../models/types';
 import { calculateUpcomingSettlements } from './calculations';
 
 const STORAGE_KEYS = {
@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
   CATEGORIES: 'categories',
   PAYMENT_METHODS: 'paymentMethods',
   ACCOUNTS: 'accounts',
+  RECURRING_TRANSACTIONS: 'recurringTransactions',
 };
 
 // デフォルトカテゴリー
@@ -729,5 +730,105 @@ export const updateAccountBalances = async (): Promise<void> => {
     );
   } catch (error) {
     console.error('Failed to update account balances:', error);
+  }
+};
+
+// 定期取引を取得する
+export const getRecurringTransactions = async (): Promise<RecurringTransaction[]> => {
+  try {
+    const jsonValue = await AsyncStorage.getItem(STORAGE_KEYS.RECURRING_TRANSACTIONS);
+    
+    if (!jsonValue) {
+      return [];
+    }
+    
+    const data = JSON.parse(jsonValue);
+    
+    return data.map((item: any) => ({
+      ...item,
+      startDate: new Date(item.startDate),
+      endDate: item.endDate ? new Date(item.endDate) : undefined,
+      lastGeneratedDate: item.lastGeneratedDate ? new Date(item.lastGeneratedDate) : undefined,
+      createdAt: new Date(item.createdAt),
+      updatedAt: new Date(item.updatedAt),
+    }));
+  } catch (error) {
+    console.error('定期取引の取得に失敗しました', error);
+    return [];
+  }
+};
+
+// 定期取引を保存する
+export const saveRecurringTransaction = async (data: Omit<RecurringTransaction, 'id' | 'createdAt' | 'updatedAt'>): Promise<RecurringTransaction> => {
+  try {
+    const recurringTransactions = await getRecurringTransactions();
+    
+    const newRecurringTransaction: RecurringTransaction = {
+      ...data,
+      id: `recurring_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    const updatedRecurringTransactions = [...recurringTransactions, newRecurringTransaction];
+    
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.RECURRING_TRANSACTIONS,
+      JSON.stringify(updatedRecurringTransactions)
+    );
+    
+    return newRecurringTransaction;
+  } catch (error) {
+    console.error('定期取引の保存に失敗しました', error);
+    throw error;
+  }
+};
+
+// 定期取引を更新する
+export const updateRecurringTransaction = async (
+  id: string,
+  data: Partial<Omit<RecurringTransaction, 'id' | 'createdAt' | 'updatedAt'>>
+): Promise<RecurringTransaction> => {
+  try {
+    const recurringTransactions = await getRecurringTransactions();
+    const index = recurringTransactions.findIndex(rt => rt.id === id);
+    
+    if (index === -1) {
+      throw new Error(`ID ${id} の定期取引が見つかりません`);
+    }
+    
+    const updatedRecurringTransaction: RecurringTransaction = {
+      ...recurringTransactions[index],
+      ...data,
+      updatedAt: new Date(),
+    };
+    
+    recurringTransactions[index] = updatedRecurringTransaction;
+    
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.RECURRING_TRANSACTIONS,
+      JSON.stringify(recurringTransactions)
+    );
+    
+    return updatedRecurringTransaction;
+  } catch (error) {
+    console.error('定期取引の更新に失敗しました', error);
+    throw error;
+  }
+};
+
+// 定期取引を削除する
+export const deleteRecurringTransaction = async (id: string): Promise<void> => {
+  try {
+    const recurringTransactions = await getRecurringTransactions();
+    const filteredRecurringTransactions = recurringTransactions.filter(rt => rt.id !== id);
+    
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.RECURRING_TRANSACTIONS,
+      JSON.stringify(filteredRecurringTransactions)
+    );
+  } catch (error) {
+    console.error('定期取引の削除に失敗しました', error);
+    throw error;
   }
 }; 

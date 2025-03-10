@@ -14,7 +14,9 @@ import { AccountFormScreen } from '../screens/AccountFormScreen';
 import { InvestmentListScreen } from '../screens/InvestmentListScreen';
 import { InvestmentItemFormScreen } from '../screens/InvestmentItemFormScreen';
 import DebitCalendarScreen from '../screens/DebitCalendarScreen';
-import { Transaction } from '../models/types';
+import RecurringTransactionListScreen from '../screens/RecurringTransactionListScreen';
+import RecurringTransactionFormScreen from '../screens/RecurringTransactionFormScreen';
+import { Transaction, RecurringTransaction } from '../models/types';
 import { IconButton, useTheme } from 'react-native-paper';
 import { View, StyleSheet } from 'react-native';
 
@@ -33,6 +35,8 @@ export type RootStackParamList = {
   InvestmentItemList: undefined;
   AddInvestmentItem: undefined;
   EditInvestmentItem: { itemId: string };
+  RecurringTransactionList: undefined;
+  RecurringTransactionForm: { recurringTransactionId?: string };
 };
 
 export type MainTabParamList = {
@@ -190,6 +194,18 @@ export const AppNavigator = () => {
         name="EditInvestmentItem"
         component={InvestmentItemFormScreen}
         options={{ title: '投資銘柄編集' }}
+      />
+      <Stack.Screen
+        name="RecurringTransactionList"
+        component={RecurringTransactionListScreen}
+        options={{ title: '定期取引管理' }}
+      />
+      <Stack.Screen
+        name="RecurringTransactionForm"
+        component={RecurringTransactionFormScreen}
+        options={({ route }) => ({
+          title: route.params?.recurringTransactionId ? '定期取引編集' : '定期取引追加'
+        })}
       />
     </Stack.Navigator>
   );
