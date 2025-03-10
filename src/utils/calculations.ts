@@ -227,14 +227,10 @@ export const calculateUpcomingSettlements = (
   paymentMethods: PaymentMethod[],
   accounts: Account[]
 ) => {
-  console.log('引き落とし予定計算の開始...');
-  
   // クレジットカードか口座引き落としで、かつ締め日と引き落とし日が設定されているものをフィルタリング
   const debitMethods = paymentMethods.filter(
     pm => (pm.type === 'credit_card' || pm.type === 'direct_debit') && pm.billingDay && pm.closingDay
   );
-  
-  console.log('対象の支払い方法:', debitMethods.length);
   
   if (debitMethods.length === 0) {
     return {
@@ -250,8 +246,6 @@ export const calculateUpcomingSettlements = (
   const currentMonth = today.getMonth(); // 0-11
   const currentDay = today.getDate();
   
-  console.log(`現在日: ${currentYear}年${currentMonth + 1}月${currentDay}日`);
-  
   const currentMonthPayments = [];
   const nextMonthPayments = [];
   
@@ -262,22 +256,16 @@ export const calculateUpcomingSettlements = (
       continue;
     }
     
-    console.log(`支払い方法の処理: ${debitMethod.name}`);
-    
     // クレジットカードの過去の利用履歴を取得（支出のみ）
     const allCardTransactions = transactions.filter(t => 
       t.paymentMethodId === debitMethod.id &&
       (t.type === 'expense' || t.type === 'investment')
     );
     
-    console.log(`${debitMethod.name}の取引数: ${allCardTransactions.length}`);
-    
     // 引き落とし予定日が設定されている取引
     const transactionsWithSettlementDate = allCardTransactions.filter(t => 
       t.creditCardSettlementDate !== undefined && t.creditCardSettlementDate !== null
     );
-    
-    console.log(`引き落とし予定日のある取引: ${transactionsWithSettlementDate.length}`);
     
     // 今月の引き落とし予定を検索
     const currentMonthSettlements = transactionsWithSettlementDate.filter(t => {
@@ -286,8 +274,6 @@ export const calculateUpcomingSettlements = (
       return settlementDate.getFullYear() === currentYear && 
              settlementDate.getMonth() === currentMonth;
     });
-    
-    console.log(`今月(${currentMonth + 1}月)の引き落とし予定: ${currentMonthSettlements.length}`);
     
     // 来月の引き落とし予定を検索
     const nextMonth = (currentMonth + 1) % 12;
@@ -300,12 +286,8 @@ export const calculateUpcomingSettlements = (
              settlementDate.getMonth() === nextMonth;
     });
     
-    console.log(`来月(${nextMonth + 1}月)の引き落とし予定: ${nextMonthSettlements.length}`);
-    
     // もし引き落とし予定日のない取引なら、締め日と引き落とし日に基づいて自動的に計算
     if (debitMethod.type === 'credit_card' && allCardTransactions.length > 0 && transactionsWithSettlementDate.length === 0) {
-      console.log(`${debitMethod.name}は引き落とし予定日のない取引があります。自動計算を試みます。`);
-      
       // 現在の締め日を計算
       const currentClosingDate = new Date(currentYear, currentMonth, debitMethod.closingDay);
       const prevClosingDate = new Date(
@@ -321,8 +303,6 @@ export const calculateUpcomingSettlements = (
       });
       
       if (relevantTransactions.length > 0) {
-        console.log(`前回締め日から今回締め日までの取引: ${relevantTransactions.length}`);
-        
         // 引き落とし予定日を計算（締め日の翌月の引き落とし日）
         const settlementMonth = currentMonth;
         const settlementYear = currentYear;
@@ -348,8 +328,6 @@ export const calculateUpcomingSettlements = (
             billingDate: new Date(currentYear, currentMonth, debitMethod.billingDay),
             type: debitMethod.type,
           });
-          
-          console.log(`${debitMethod.name}の今月の引き落とし予定を追加: ${totalAmount}円`);
         } else {
           // 来月の引き落とし
           const totalAmount = relevantTransactions.reduce((sum, t) => sum + t.amount, 0);
@@ -361,8 +339,6 @@ export const calculateUpcomingSettlements = (
             billingDate: new Date(billingYear, billingMonth, debitMethod.billingDay),
             type: debitMethod.type,
           });
-          
-          console.log(`${debitMethod.name}の来月の引き落とし予定を追加: ${totalAmount}円`);
         }
       }
     } else {
@@ -379,8 +355,6 @@ export const calculateUpcomingSettlements = (
           billingDate: new Date(currentYear, currentMonth, debitMethod.billingDay),
           type: debitMethod.type,
         });
-        
-        console.log(`${debitMethod.name}の今月の引き落とし予定を追加: ${totalAmount}円`);
       }
       
       // 来月の支払い予定
@@ -396,8 +370,6 @@ export const calculateUpcomingSettlements = (
           billingDate: new Date(nextYear, nextMonth, debitMethod.billingDay),
           type: debitMethod.type,
         });
-        
-        console.log(`${debitMethod.name}の来月の引き落とし予定を追加: ${totalAmount}円`);
       }
     }
   }
@@ -409,8 +381,6 @@ export const calculateUpcomingSettlements = (
   // 合計金額の計算
   const totalCurrentMonth = currentMonthPayments.reduce((sum, payment) => sum + payment.amount, 0);
   const totalNextMonth = nextMonthPayments.reduce((sum, payment) => sum + payment.amount, 0);
-  
-  console.log(`今月の引き落とし合計: ${totalCurrentMonth}円, 来月の引き落とし合計: ${totalNextMonth}円`);
   
   return {
     currentMonthPayments,

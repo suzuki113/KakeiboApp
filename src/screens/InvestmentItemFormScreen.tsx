@@ -92,8 +92,6 @@ export const InvestmentItemFormScreen = () => {
     
     try {
       // 実際の実装ではAPIやデータベースに保存
-      console.log('保存データ:', investmentItemData);
-      
       Alert.alert(
         '成功', 
         isEdit ? '銘柄情報を更新しました' : '銘柄を追加しました',

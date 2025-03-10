@@ -240,8 +240,6 @@ export const saveTransaction = async (transaction: Omit<Transaction, 'id' | 'cre
           paymentMethod.closingDay && 
           paymentMethod.billingDay) {
         
-        console.log('クレジットカード取引を検出:', transaction);
-        
         // 締め日と引き落とし日から引き落とし予定日を計算
         const transactionDate = new Date(transaction.date);
         const settlementDate = calculateSettlementDate(
@@ -249,8 +247,6 @@ export const saveTransaction = async (transaction: Omit<Transaction, 'id' | 'cre
           paymentMethod.closingDay,
           paymentMethod.billingDay
         );
-        
-        console.log('計算された引き落とし日:', settlementDate);
         
         // トランザクション情報を更新（引き落とし予定日を設定）
         updatedTransaction = {
@@ -267,8 +263,6 @@ export const saveTransaction = async (transaction: Omit<Transaction, 'id' | 'cre
       JSON.stringify(updatedTransactions)
     );
     
-    console.log('トランザクション保存完了:', updatedTransaction);
-    
     // 引き落とし予定の再計算が必要であることを示すフラグを設定
     // DebitCalendarScreenでの明示的な更新時にのみ再計算される
     await AsyncStorage.setItem('debitSchedulesNeedUpdate', 'true');
@@ -279,68 +273,6 @@ export const saveTransaction = async (transaction: Omit<Transaction, 'id' | 'cre
     return updatedTransaction;
   } catch (error) {
     console.error('トランザクション保存エラー:', error);
-    throw error;
-  }
-};
-
-/**
- * 引き落としカレンダーのスケジュールを更新する
- */
-const updateDebitCalendarSchedules = async () => {
-  try {
-    // 取引データを取得
-    const transactionsJSON = await AsyncStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-    const transactions: Transaction[] = transactionsJSON
-      ? JSON.parse(transactionsJSON)
-      : [];
-    
-    // 支払い方法データを取得
-    const paymentMethodsJSON = await AsyncStorage.getItem(STORAGE_KEYS.PAYMENT_METHODS);
-    const paymentMethods: PaymentMethod[] = paymentMethodsJSON
-      ? JSON.parse(paymentMethodsJSON)
-      : [];
-    
-    // 口座データを取得
-    const accountsJSON = await AsyncStorage.getItem(STORAGE_KEYS.ACCOUNTS);
-    const accounts: Account[] = accountsJSON
-      ? JSON.parse(accountsJSON)
-      : [];
-    
-    console.log('引き落とし予定の計算開始...');
-    console.log('トランザクション数:', transactions.length);
-    console.log('支払い方法数:', paymentMethods.length);
-    
-    // クレジットカードの引き落とし予定があるトランザクションを確認
-    const creditCardTransactions = transactions.filter(t => 
-      t.creditCardSettlementDate !== undefined && 
-      t.paymentMethodId && 
-      paymentMethods.some(pm => pm.id === t.paymentMethodId && pm.type === 'credit_card')
-    );
-    
-    console.log('クレジットカード引き落とし予定のあるトランザクション:', creditCardTransactions.length);
-    
-    // 引き落とし予定を計算
-    const settlementData = calculateUpcomingSettlements(
-      transactions,
-      paymentMethods,
-      accounts
-    );
-    
-    console.log('今月の引き落とし予定:', settlementData.currentMonthPayments.length);
-    console.log('来月の引き落とし予定:', settlementData.nextMonthPayments.length);
-    
-    // 自動計算された引き落とし予定情報をAsyncStorageに保存
-    await AsyncStorage.setItem('autoDebitSchedules', JSON.stringify({
-      currentMonthPayments: settlementData.currentMonthPayments,
-      nextMonthPayments: settlementData.nextMonthPayments,
-      totalCurrentMonth: settlementData.totalCurrentMonth,
-      totalNextMonth: settlementData.totalNextMonth,
-      updatedAt: new Date().toISOString()
-    }));
-    
-    return settlementData;
-  } catch (error) {
-    console.error('引き落とし予定更新エラー:', error);
     throw error;
   }
 };
@@ -373,90 +305,6 @@ const calculateSettlementDate = (
   
   // 引き落とし日を設定して返却
   return new Date(settlementYear, settlementMonth, billingDay);
-};
-
-// 引き落としトランザクションの自動生成（クレジットカードと口座引き落とし共通）
-const createSettlementTransaction = async (originalTransaction: Transaction) => {
-  try {
-    // 支出または投資のトランザクションでない場合はスキップ
-    if (originalTransaction.type !== 'expense' && originalTransaction.type !== 'investment') {
-      console.log('非支出トランザクションのため引き落とし処理はスキップされました');
-      return;
-    }
-
-    if (!originalTransaction.creditCardSettlementDate) {
-      console.error('Settlement date is missing for transaction');
-      return;
-    }
-    
-    // 支払い方法の情報を取得
-    const paymentMethods = await getPaymentMethods();
-    const paymentMethod = paymentMethods.find(pm => pm.id === originalTransaction.paymentMethodId);
-    
-    if (!paymentMethod) {
-      console.error('Payment method not found');
-      return;
-    }
-    
-    // 既存のトランザクションを取得
-    const existingTransactions = await getTransactions();
-    
-    // 同じ支払い方法と同じ引き落とし日の既存引き落し取引をすべて検索
-    const existingSettlements = existingTransactions.filter(t => 
-      t.status === 'settlement' &&
-      t.paymentMethodId === originalTransaction.paymentMethodId &&
-      t.creditCardSettlementDate &&
-      t.creditCardSettlementDate.getFullYear() === originalTransaction.creditCardSettlementDate!.getFullYear() &&
-      t.creditCardSettlementDate.getMonth() === originalTransaction.creditCardSettlementDate!.getMonth() &&
-      t.creditCardSettlementDate.getDate() === originalTransaction.creditCardSettlementDate!.getDate()
-    );
-    
-    // 既存の引き落とし取引がある場合
-    if (existingSettlements.length > 0) {
-      // 最初の引き落とし取引を取得して更新
-      const existingSettlement = existingSettlements[0];
-      
-      // 既存の引き落としトランザクションの金額を更新
-      const updatedAmount = existingSettlement.amount + originalTransaction.amount;
-      await updateTransaction(existingSettlement.id, { amount: updatedAmount });
-      
-      // 元のトランザクションに関連IDを設定
-      await updateTransaction(originalTransaction.id, { relatedTransactionId: existingSettlement.id });
-    } else {
-      // 新しい引き落としトランザクションを作成
-      const settlementTransaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'> = {
-        // 元のトランザクションと同じタイプを使用（expense, investment など）
-        type: originalTransaction.type,
-        amount: originalTransaction.amount,
-        date: originalTransaction.creditCardSettlementDate,
-        description: `${paymentMethod.name}引き落とし`,
-        categoryId: originalTransaction.categoryId, // 同じカテゴリを使用
-        accountId: paymentMethod.accountId, // 引き落とし元口座
-        paymentMethodId: originalTransaction.paymentMethodId,
-        status: 'settlement',
-        creditCardSettlementDate: originalTransaction.creditCardSettlementDate,
-      };
-      
-      // トランザクションを保存
-      const newTransaction: Transaction = {
-        ...settlementTransaction,
-        id: Math.random().toString(36).substr(2, 9),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
-      // 保存
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.TRANSACTIONS,
-        JSON.stringify([...existingTransactions, newTransaction])
-      );
-      
-      // 元のトランザクションに関連IDを設定
-      await updateTransaction(originalTransaction.id, { relatedTransactionId: newTransaction.id });
-    }
-  } catch (error) {
-    console.error('Failed to create settlement transaction:', error);
-  }
 };
 
 // トランザクションの取得

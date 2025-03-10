@@ -109,12 +109,9 @@ export const DebitCalendarScreen = () => {
   // データ読み込み
   const loadData = async () => {
     try {
-      console.log('引き落としカレンダーデータの読み込み開始...');
-      
       // 更新中であることをユーザーに通知
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
         // モバイル環境の場合はToastを表示
-        // Alert.alert('更新中', '引き落とし予定を更新しています...');
       }
       
       // アカウントと支払い方法を取得
@@ -126,9 +123,6 @@ export const DebitCalendarScreen = () => {
       setPaymentMethods(paymentMethodsData);
       setTransactions(transactionsData);
       
-      console.log('トランザクション数:', transactionsData.length);
-      console.log('支払い方法数:', paymentMethodsData.length);
-      
       // 保存された手動追加の引き落とし予定を取得
       const storedSchedulesJson = await AsyncStorage.getItem('debitSchedules');
       const storedSchedules: DebitSchedule[] = storedSchedulesJson 
@@ -136,7 +130,6 @@ export const DebitCalendarScreen = () => {
         : [];
       
       setDebitSchedules(storedSchedules);
-      console.log('手動追加の引き落とし予定数:', storedSchedules.length);
       
       // 更新フラグがあるかどうかを確認
       const needsUpdate = await AsyncStorage.getItem('debitSchedulesNeedUpdate');
@@ -144,14 +137,12 @@ export const DebitCalendarScreen = () => {
       
       // 自動計算された引き落とし予定を取得
       const autoSchedulesJson = await AsyncStorage.getItem('autoDebitSchedules');
-      console.log('自動計算の引き落とし予定データ:', autoSchedulesJson ? 'あり' : 'なし');
       
       let autoSchedules: AutoDebitSchedules | null = null;
       let recalculated = false;
       
       if (autoSchedulesJson && !forceUpdate) {
         try {
-          console.log('自動計算の引き落とし予定データを解析中...');
           const parsedData = JSON.parse(autoSchedulesJson);
           
           // billingDateをDateオブジェクトに変換
@@ -177,10 +168,6 @@ export const DebitCalendarScreen = () => {
           
           autoSchedules = parsedData;
           setLastUpdate(autoSchedules!.updatedAt || new Date().toISOString());
-          
-          console.log('自動計算の引き落とし予定データ解析完了:');
-          console.log('- 今月の引き落とし:', autoSchedules!.currentMonthPayments.length);
-          console.log('- 来月の引き落とし:', autoSchedules!.nextMonthPayments.length);
         } catch (e) {
           console.error('自動引き落とし予定の解析エラー:', e);
           autoSchedules = null;
@@ -200,8 +187,6 @@ export const DebitCalendarScreen = () => {
         source: 'manual'
       }));
       
-      console.log('手動追加の引き落とし予定アイテム数:', manualDebitItems.length);
-      
       // 自動計算された引き落とし予定をCombinedDebitItemに変換
       let currentMonthItems: CombinedDebitItem[] = [];
       let nextMonthItems: CombinedDebitItem[] = [];
@@ -212,7 +197,6 @@ export const DebitCalendarScreen = () => {
           !autoSchedules.nextMonthPayments ||
           (autoSchedules.currentMonthPayments.length === 0 && autoSchedules.nextMonthPayments.length === 0) ||
           forceUpdate) {
-        console.log('自動計算データがないか更新が必要なため、再計算を実行します...');
         
         // 引き落とし予定を計算
         const settlementData = calculateUpcomingSettlements(
@@ -220,10 +204,6 @@ export const DebitCalendarScreen = () => {
           paymentMethodsData,
           accountsData
         );
-        
-        console.log('再計算された引き落とし予定:');
-        console.log('- 今月の引き落とし:', settlementData.currentMonthPayments.length);
-        console.log('- 来月の引き落とし:', settlementData.nextMonthPayments.length);
         
         // 今月の引き落とし予定をCombinedDebitItemに変換
         currentMonthItems = settlementData.currentMonthPayments.map(payment => {
@@ -267,7 +247,6 @@ export const DebitCalendarScreen = () => {
         recalculated = true;
       } else if (autoSchedules !== null) {
         // 保存されている自動計算データを使用
-        console.log('保存されている自動計算データを使用します');
         
         // 今月の引き落とし予定
         currentMonthItems = autoSchedules.currentMonthPayments.map(payment => {
@@ -298,20 +277,12 @@ export const DebitCalendarScreen = () => {
         });
       }
       
-      console.log('変換後の引き落とし予定アイテム数:');
-      console.log('- 今月:', currentMonthItems.length);
-      console.log('- 来月:', nextMonthItems.length);
-      
       // すべての引き落とし予定を統合
       const allDebitItems = [...manualDebitItems, ...currentMonthItems, ...nextMonthItems];
       setCombinedDebitItems(allDebitItems);
       
-      console.log('統合された引き落とし予定アイテム数:', allDebitItems.length);
-      
       // マーカー付きの日付を更新
       updateMarkedDates(allDebitItems);
-      
-      console.log('引き落としカレンダーデータの読み込み完了');
       
       // 更新完了をユーザーに通知
       if (recalculated) {
