@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { TextInput, Button, SegmentedButtons, HelperText } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { TextInput, Button, SegmentedButtons, HelperText, Text } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { TransactionType } from '../models/types';
 import { saveCategory, getCategories, updateCategory } from '../utils/storage';
-import ColorPicker from 'react-native-wheel-color-picker';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CategoryFormScreenRouteProp = RouteProp<RootStackParamList, 'EditCategory'>;
@@ -17,6 +16,27 @@ const ICONS = [
   'credit-card', 'gift', 'chart-line'
 ];
 
+const COLOR_PALETTE = [
+  '#F44336', // Red
+  '#E91E63', // Pink
+  '#9C27B0', // Purple
+  '#673AB7', // Deep Purple
+  '#3F51B5', // Indigo
+  '#2196F3', // Blue
+  '#03A9F4', // Light Blue
+  '#00BCD4', // Cyan
+  '#009688', // Teal
+  '#4CAF50', // Green
+  '#8BC34A', // Light Green
+  '#CDDC39', // Lime
+  '#FFEB3B', // Yellow
+  '#FFC107', // Amber
+  '#FF9800', // Orange
+  '#FF5722', // Deep Orange
+  '#795548', // Brown
+  '#607D8B', // Blue Grey
+];
+
 export const CategoryFormScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<CategoryFormScreenRouteProp>();
@@ -24,7 +44,7 @@ export const CategoryFormScreen = () => {
 
   const [name, setName] = useState('');
   const [type, setType] = useState<TransactionType>('expense');
-  const [color, setColor] = useState('#FF5252');
+  const [color, setColor] = useState(COLOR_PALETTE[0]);
   const [icon, setIcon] = useState(ICONS[0]);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,15 +123,31 @@ export const CategoryFormScreen = () => {
           style={styles.segmentedButtons}
         />
 
-        <View style={styles.colorPicker}>
-          <ColorPicker
-            color={color}
-            onColorChange={setColor}
-            thumbSize={30}
-            sliderSize={30}
-            noSnap={true}
-            row={false}
-          />
+        <View style={styles.sectionTitle}>
+          <HelperText type="info" style={styles.sectionLabel}>カラー選択</HelperText>
+        </View>
+        
+        <View style={styles.colorGrid}>
+          {COLOR_PALETTE.map((colorOption) => (
+            <TouchableOpacity
+              key={colorOption}
+              style={[
+                styles.colorItem,
+                { backgroundColor: colorOption },
+                color === colorOption && styles.selectedColorItem
+              ]}
+              onPress={() => setColor(colorOption)}
+            />
+          ))}
+        </View>
+
+        <View style={styles.colorPreview}>
+          <Text style={styles.colorPreviewText}>選択した色:</Text>
+          <View style={[styles.selectedColorPreview, { backgroundColor: color }]} />
+        </View>
+
+        <View style={styles.sectionTitle}>
+          <HelperText type="info" style={styles.sectionLabel}>アイコン選択</HelperText>
         </View>
 
         <View style={styles.iconGrid}>
@@ -122,6 +158,7 @@ export const CategoryFormScreen = () => {
               mode={icon === iconName ? 'contained' : 'outlined'}
               onPress={() => setIcon(iconName)}
               style={styles.iconButton}
+              contentStyle={styles.iconButtonContent}
             >
               {''}
             </Button>
@@ -160,21 +197,65 @@ const styles = StyleSheet.create({
   segmentedButtons: {
     marginBottom: 16,
   },
-  colorPicker: {
-    height: 200,
-    marginBottom: 16,
+  sectionTitle: {
+    marginTop: 8,
+    marginBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#666',
+  },
+  colorGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    marginVertical: 12,
+  },
+  colorItem: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    margin: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  selectedColorItem: {
+    borderWidth: 3,
+    borderColor: '#000',
+  },
+  colorPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+    paddingHorizontal: 6,
+  },
+  colorPreviewText: {
+    marginRight: 12,
+  },
+  selectedColorPreview: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
   iconGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    marginVertical: 12,
   },
   iconButton: {
-    width: '23%',
-    marginBottom: 8,
+    width: '22%',
+    marginBottom: 10,
+  },
+  iconButtonContent: {
+    height: 44,
   },
   submitButton: {
-    marginTop: 8,
+    marginTop: 16,
   },
 }); 

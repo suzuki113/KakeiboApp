@@ -180,12 +180,44 @@ export const HomeScreen = () => {
     }
   };
 
+  // 総資産のセクション
+  const renderTotalAssets = () => {
+    return (
+      <Card style={styles.card}>
+        <Card.Content style={styles.cardContent}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleContainer}>
+              <IconButton
+                icon="wallet"
+                size={24}
+                iconColor={theme.colors.primary}
+                style={styles.sectionIcon}
+              />
+              <Text variant="titleMedium">総資産</Text>
+            </View>
+          </View>
+          <Text variant="headlineMedium" style={styles.totalBalanceText}>
+            ¥{balances.totalBalance.toLocaleString()}
+          </Text>
+          <View style={styles.assetDetailsContainer}>
+            <View style={styles.operatingAssetsContainer}>
+              <Text variant="bodyMedium" style={styles.operatingAssetsLabel}>運用中資産</Text>
+              <Text variant="titleLarge" style={styles.operatingAssetsText}>
+                ¥{balances.accountBalances.investment.toLocaleString()}
+              </Text>
+            </View>
+          </View>
+        </Card.Content>
+      </Card>
+    );
+  };
+
   // 口座残高のセクション
   const renderAccountsSection = () => {
     return (
-      <Card style={styles.accountsCard}>
-        <Card.Content>
-          <View style={styles.accountsHeader}>
+      <Card style={styles.card}>
+        <Card.Content style={styles.cardContent}>
+          <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
               <IconButton
                 icon="bank"
@@ -208,30 +240,24 @@ export const HomeScreen = () => {
           {accounts.length === 0 ? (
             <Text style={styles.emptyText}>口座がありません</Text>
           ) : (
-            accounts.map(account => (
-              <View key={account.id} style={styles.accountItem}>
-                <View style={styles.accountInfo}>
-                  <View style={[styles.accountIconContainer, { backgroundColor: getAccountColor(account.type) }]}>
-                    <IconButton
-                      icon={getAccountIcon(account.type)}
-                      iconColor="#fff"
-                      size={20}
-                      style={styles.iconButton}
-                    />
+            <View style={styles.accountsList}>
+              {accounts.map(account => (
+                <View key={account.id} style={styles.accountItem}>
+                  <View style={styles.accountInfo}>
+                    <Text variant="bodyMedium">{account.name}</Text>
                   </View>
-                  <Text variant="bodyMedium">{account.name}</Text>
+                  <Text
+                    variant="bodyLarge"
+                    style={{
+                      color: account.balance >= 0 ? theme.colors.primary : theme.colors.error,
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    ¥{account.balance.toLocaleString()}
+                  </Text>
                 </View>
-                <Text
-                  variant="bodyLarge"
-                  style={{
-                    color: account.balance >= 0 ? theme.colors.primary : theme.colors.error,
-                    fontWeight: 'bold',
-                  }}
-                >
-                  ¥{account.balance.toLocaleString()}
-                </Text>
-              </View>
-            ))
+              ))}
+            </View>
           )}
         </Card.Content>
       </Card>
@@ -241,8 +267,8 @@ export const HomeScreen = () => {
   // 月間統計のセクション
   const renderMonthlyStatsSection = () => {
     return (
-      <Card style={styles.monthlyCard}>
-        <Card.Content>
+      <Card style={styles.card}>
+        <Card.Content style={styles.cardContent}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
               <IconButton
@@ -255,24 +281,25 @@ export const HomeScreen = () => {
                 {monthlyStats.year}年{monthlyStats.month}月の統計
               </Text>
             </View>
-            <View style={styles.statsSelector}>
-              <Button
-                mode={activeGraph === 'category' ? 'contained' : 'outlined'}
-                compact
-                onPress={() => setActiveGraph('category')}
-                style={styles.graphButton}
-              >
-                カテゴリ
-              </Button>
-              <Button
-                mode={activeGraph === 'paymentMethod' ? 'contained' : 'outlined'}
-                compact
-                onPress={() => setActiveGraph('paymentMethod')}
-                style={styles.graphButton}
-              >
-                支払い方法
-              </Button>
-            </View>
+          </View>
+          
+          <View style={styles.statsSelector}>
+            <Button
+              mode={activeGraph === 'category' ? 'contained' : 'outlined'}
+              compact
+              onPress={() => setActiveGraph('category')}
+              style={styles.graphButton}
+            >
+              カテゴリ
+            </Button>
+            <Button
+              mode={activeGraph === 'paymentMethod' ? 'contained' : 'outlined'}
+              compact
+              onPress={() => setActiveGraph('paymentMethod')}
+              style={styles.graphButton}
+            >
+              支払い方法
+            </Button>
           </View>
           
           <View style={styles.statsOverview}>
@@ -369,16 +396,18 @@ export const HomeScreen = () => {
     }
 
     return (
-      <Card style={styles.settlementsCard}>
-        <Card.Content>
-          <View style={styles.sectionTitleContainer}>
-            <IconButton
-              icon="calendar-check"
-              size={24}
-              iconColor={theme.colors.primary}
-              style={styles.sectionIcon}
-            />
-            <Text variant="titleMedium">引き落とし予定</Text>
+      <Card style={styles.card}>
+        <Card.Content style={styles.cardContent}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleContainer}>
+              <IconButton
+                icon="calendar-check"
+                size={24}
+                iconColor={theme.colors.primary}
+                style={styles.sectionIcon}
+              />
+              <Text variant="titleMedium">引き落とし予定</Text>
+            </View>
           </View>
           
           {hasCurrentMonthPayments && (
@@ -449,38 +478,6 @@ export const HomeScreen = () => {
     );
   };
 
-  // 総資産のセクション
-  const renderTotalAssets = () => {
-    return (
-      <Card style={styles.totalBalanceCard}>
-        <Card.Content>
-          <View style={styles.totalBalanceHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <IconButton
-                icon="wallet"
-                size={24}
-                iconColor={theme.colors.primary}
-                style={styles.sectionIcon}
-              />
-              <Text variant="titleMedium">総資産</Text>
-            </View>
-          </View>
-          <Text variant="headlineMedium" style={styles.totalBalanceText}>
-            ¥{balances.totalBalance.toLocaleString()}
-          </Text>
-          <View style={styles.assetDetailsContainer}>
-            <View style={styles.operatingAssetsContainer}>
-              <Text variant="bodyMedium" style={styles.operatingAssetsLabel}>運用中資産</Text>
-              <Text variant="titleLarge" style={styles.operatingAssetsText}>
-                ¥{balances.accountBalances.investment.toLocaleString()}
-              </Text>
-            </View>
-          </View>
-        </Card.Content>
-      </Card>
-    );
-  };
-
   return (
     <ScrollView
       style={styles.container}
@@ -518,16 +515,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     padding: 12,
   },
-  totalBalanceCard: {
+  card: {
     marginBottom: 16,
     borderRadius: 12,
     elevation: 2,
   },
-  totalBalanceHeader: {
+  cardContent: {
+    paddingHorizontal: 8,
+  },
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionIcon: {
+    margin: 0,
+    marginRight: 4,
   },
   totalBalanceText: {
     fontWeight: 'bold',
@@ -549,24 +557,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#9C27B0',
   },
-  accountsCard: {
-    marginBottom: 16,
-    borderRadius: 12,
-    elevation: 2,
-  },
-  accountsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sectionIcon: {
-    margin: 0,
-    marginRight: 4,
+  accountsList: {
+    marginTop: 8,
   },
   accountItem: {
     flexDirection: 'row',
@@ -578,41 +570,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  accountIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  iconButton: {
-    margin: 0,
-  },
   emptyText: {
     textAlign: 'center',
     marginVertical: 16,
     color: '#757575',
   },
-  monthlyCard: {
-    marginBottom: 16,
-    borderRadius: 12,
-    elevation: 2,
-  },
-  sectionHeader: {
-    marginBottom: 16,
-  },
   statsSelector: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 12,
+    marginBottom: 16,
   },
   graphButton: {
     marginHorizontal: 4,
   },
   statsOverview: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     marginBottom: 16,
   },
   statsItem: {
@@ -635,6 +609,7 @@ const styles = StyleSheet.create({
   chartTitle: {
     marginBottom: 8,
     color: '#757575',
+    textAlign: 'center',
   },
   chartContainer: {
     alignItems: 'center',
@@ -643,11 +618,6 @@ const styles = StyleSheet.create({
   centerLabel: {
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  settlementsCard: {
-    marginBottom: 16,
-    borderRadius: 12,
-    elevation: 2,
   },
   settlementSection: {
     marginBottom: 16,
@@ -674,5 +644,8 @@ const styles = StyleSheet.create({
   },
   managementButton: {
     marginLeft: 8,
+  },
+  iconButton: {
+    margin: 0,
   },
 }); 
