@@ -6,6 +6,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { getTransactions, deleteTransaction, getCategories, getPaymentMethods, getAccounts } from '../utils/storage';
+import { COLORS } from '../theme/theme';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -204,13 +205,13 @@ export const TransactionsScreen = () => {
   const getTransactionTypeIconAndColor = (type: string) => {
     switch (type) {
       case 'expense':
-        return { icon: 'cash-minus', color: '#f44336' };
+        return { icon: 'cash-minus', color: COLORS.pinkPurple };
       case 'income':
-        return { icon: 'cash-plus', color: '#4caf50' };
+        return { icon: 'cash-plus', color: COLORS.lightPurple };
       case 'transfer':
-        return { icon: 'bank-transfer', color: '#2196f3' };
+        return { icon: 'bank-transfer', color: COLORS.lightBlue };
       case 'investment':
-        return { icon: 'chart-line', color: '#9c27b0' };
+        return { icon: 'chart-line', color: COLORS.purple };
       default:
         return { icon: 'cash', color: '#757575' };
     }
@@ -277,10 +278,10 @@ export const TransactionsScreen = () => {
     
     if (transaction.status === 'pending_settlement') {
       statusIcon = 'clock-outline';
-      statusIconColor = '#FFA000'; // オレンジ色（警告色）
+      statusIconColor = COLORS.lightBlue; // オレンジ色（警告色）
     } else if (transaction.status === 'settlement') {
       statusIcon = 'bank-transfer';
-      statusIconColor = '#4CAF50'; // 緑色（成功色）
+      statusIconColor = COLORS.lightPurple; // 緑色（成功色）
     }
 
     // キャプションに表示される情報を構築
@@ -603,13 +604,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   incomeAmount: {
-    color: '#4caf50',
+    color: COLORS.lightPurple,
   },
   expenseAmount: {
-    color: '#f44336',
+    color: COLORS.pinkPurple,
   },
   transferAmount: {
-    color: '#2196f3',
+    color: COLORS.lightBlue,
   },
   descriptionContainer: {
     flexDirection: 'row',

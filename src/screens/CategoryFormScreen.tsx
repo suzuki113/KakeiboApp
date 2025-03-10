@@ -11,30 +11,21 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CategoryFormScreenRouteProp = RouteProp<RootStackParamList, 'EditCategory'>;
 
 const ICONS = [
-  'food', 'train', 'car', 'home', 'shopping', 'medical',
-  'entertainment', 'sports', 'education', 'cash', 'bank',
-  'credit-card', 'gift', 'chart-line'
+  'silverware-fork-knife', 'train', 'car', 'home', 'cart-outline', 'medical-bag',
+  'movie', 'tennis', 'school', 'cash', 'bank',
+  'credit-card', 'gift', 'chart-line', 'face-woman', 'face-woman-outline',
+  'hair-dryer', 'spray', 'bottle-tonic', 'mirror', 'hanger', 'emoticon-kiss',
+  'water-outline', 'coffee', 'beer', 'hamburger', 'pizza', 'cake',
+  'phone', 'cellphone', 'laptop', 'television', 'gamepad-variant',
+  'baby-face-outline', 'dog', 'cat'
 ];
 
 const COLOR_PALETTE = [
-  '#F44336', // Red
-  '#E91E63', // Pink
-  '#9C27B0', // Purple
-  '#673AB7', // Deep Purple
-  '#3F51B5', // Indigo
-  '#2196F3', // Blue
-  '#03A9F4', // Light Blue
-  '#00BCD4', // Cyan
-  '#009688', // Teal
-  '#4CAF50', // Green
-  '#8BC34A', // Light Green
-  '#CDDC39', // Lime
-  '#FFEB3B', // Yellow
-  '#FFC107', // Amber
-  '#FF9800', // Orange
-  '#FF5722', // Deep Orange
-  '#795548', // Brown
-  '#607D8B', // Blue Grey
+  '#BAB9EB', // 薄い紫
+  '#EAB9EB', // ピンク寄りの薄い紫
+  '#B9C9EB', // 薄い青
+  '#AB89F0', // 紫
+  '#FFFFFF', // 白
 ];
 
 export const CategoryFormScreen = () => {
@@ -152,16 +143,17 @@ export const CategoryFormScreen = () => {
 
         <View style={styles.iconGrid}>
           {ICONS.map((iconName) => (
-            <Button
-              key={iconName}
-              icon={iconName}
-              mode={icon === iconName ? 'contained' : 'outlined'}
-              onPress={() => setIcon(iconName)}
-              style={styles.iconButton}
-              contentStyle={styles.iconButtonContent}
-            >
-              {''}
-            </Button>
+            <View key={iconName} style={styles.iconButtonContainer}>
+              <Button
+                icon={iconName}
+                mode={icon === iconName ? 'contained' : 'outlined'}
+                onPress={() => setIcon(iconName)}
+                style={styles.iconButton}
+                contentStyle={styles.iconButtonContent}
+              >
+                {''}
+              </Button>
+            </View>
           ))}
         </View>
 
@@ -245,12 +237,16 @@ const styles = StyleSheet.create({
   iconGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     marginVertical: 12,
   },
+  iconButtonContainer: {
+    width: '25%',
+    padding: 4,
+  },
   iconButton: {
-    width: '22%',
-    marginBottom: 10,
+    width: '100%',
+    marginBottom: 0,
   },
   iconButtonContent: {
     height: 44,

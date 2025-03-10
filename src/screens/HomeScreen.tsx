@@ -9,6 +9,7 @@ import { calculateBalance, calculateMonthlyStats, calculateMonthlyPaymentMethodS
 import { PieChart } from 'react-native-gifted-charts';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { Account, PaymentMethod } from '../models/types';
+import { COLORS } from '../theme/theme';
 
 type MonthlyStatsData = {
   categoryId: string;
@@ -497,13 +498,13 @@ export const HomeScreen = () => {
 const getAccountColor = (type: string): string => {
   switch (type) {
     case 'cash':
-      return '#4CAF50'; // 緑
+      return COLORS.lightPurple;
     case 'bank':
-      return '#2196F3'; // 青
+      return COLORS.lightBlue;
     case 'credit':
-      return '#FF5722'; // オレンジ
+      return COLORS.pinkPurple;
     case 'investment':
-      return '#9C27B0'; // 紫
+      return COLORS.purple;
     default:
       return '#757575'; // グレー
   }
@@ -555,7 +556,7 @@ const styles = StyleSheet.create({
   },
   operatingAssetsText: {
     fontWeight: 'bold',
-    color: '#9C27B0',
+    color: COLORS.purple,
   },
   accountsList: {
     marginTop: 8,
@@ -601,10 +602,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   incomeAmount: {
-    color: '#4CAF50',
+    color: COLORS.lightPurple,
   },
   expenseAmount: {
-    color: '#F44336',
+    color: COLORS.pinkPurple,
   },
   chartTitle: {
     marginBottom: 8,
